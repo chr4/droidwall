@@ -11,6 +11,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
+    <receiver android:name="BootBroadcast" android:permission="android.permission.RECEIVE_BOOT_COMPLETED"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"></action>
+</intent-filter>
+</receiver>
+</application>
     <uses-sdk android:minSdkVersion="3" />
 </manifest> 
