@@ -23,19 +23,30 @@
 
 package com.googlecode.droidwall;
 
-import android.app.Activity;
+import java.util.Arrays;
+import java.util.Comparator;
+
+import android.app.ListActivity;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.ListAdapter;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+
+import com.googlecode.droidwall.Api.DroidApp;
 
 /**
  * Main application activity.
  * This is the screen displayed when you open the application
  */
-public class MainActivity extends Activity {
+public class MainActivity extends ListActivity implements OnCheckedChangeListener {
 	
 	// Menu options
 	private static final int MENU_SHOWRULES = 1;
@@ -46,7 +57,33 @@ public class MainActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
+    }
+    @Override
+    protected void onResume() {
+    	super.onResume();
+        final DroidApp[] apps = Api.getApps(this);
+        Arrays.sort(apps, new Comparator<DroidApp>() {
+			@Override
+			public int compare(DroidApp o1, DroidApp o2) {
+				if (o1.allowed == o2.allowed) return 0;
+				if (o1.allowed) return -1;
+				return 1;
+			}
+        });
+		ListAdapter adapter = new ArrayAdapter<DroidApp>(this,R.layout.listitem,R.id.itemtext,apps) {
+        	@Override
+        	public View getView(int position, View convertView, ViewGroup parent) {
+       			convertView = super.getView(position, convertView, parent);
+        		final DroidApp item = this.getItem(position);
+        		final CheckBox box = (CheckBox) convertView.findViewById(R.id.itemcheck);
+       			box.setTag(item);
+				box.setChecked(item.allowed);
+       			box.setOnCheckedChangeListener(MainActivity.this);
+       			return convertView;
+        	}
+        };
+        
+        setListAdapter(adapter);
     }
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
@@ -80,4 +117,9 @@ public class MainActivity extends Activity {
     	}
     	return false;
     }
+	@Override
+	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+		DroidApp app = (DroidApp) buttonView.getTag();
+		app.allowed = isChecked;
+	}
 }

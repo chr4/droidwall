@@ -28,10 +28,14 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.StringTokenizer;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.util.Log;
 
 /**
@@ -39,10 +43,12 @@ import android.util.Log;
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
+	public static final String PREFS_NAME = "DroidWallPrefs";
+	public static final String PREF_ALLOWEDUIDS = "AllowedUids";
 	/** shell file path (using /sqlite_stmt_journals since it is writable and in-memory) */
 	private static File SHELL_FILE = new File("/sqlite_stmt_journals/droidwall.sh");
 	// Cached applications
-	private static Application applications[] = null;
+	private static DroidApp applications[] = null;
 
     /**
      * Display a simple alert box
@@ -57,16 +63,35 @@ public final class Api {
     
     /**
      * Purge and re-add all rules.
-     * @param ctx context optional context for alert messages
+     * @param ctx application context (mandatory)
      */
 	public static void refreshIptables(Context ctx) {
+		if (ctx == null) {
+			return;
+		}
+		SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
+		final DroidApp[] apps = getApps(ctx);
+		// Builds a pipe-separated list of uids
+		StringBuilder newuids = new StringBuilder();
+		for (int i=0; i<apps.length; i++) {
+			if (apps[i].allowed) {
+				if (newuids.length() != 0) newuids.append('|');
+				newuids.append(apps[i].uid);
+			}
+		}
+		// save the new list of uids if necessary
+		if (!newuids.toString().equals(prefs.getString(PREF_ALLOWEDUIDS, ""))) {
+			Editor edit = prefs.edit();
+			edit.putString(PREF_ALLOWEDUIDS, newuids.toString());
+			edit.commit();
+		}
 		if (!purgeIptables(ctx)) {
 			return;
 		}
     	StringBuilder script = new StringBuilder();
 		try {
 			int code;
-			for (Application app : getApps(ctx)) {
+			for (DroidApp app : apps) {
 				if (app.allowed) {
 					script.append("iptables -A OUTPUT -o rmnet+ -m owner --uid-owner " + app.uid + " -j ACCEPT\n");
 				}
@@ -123,13 +148,25 @@ public final class Api {
     }
 
     /**
-     * @param ctx context optional context for alert messages
+     * @param ctx application context (mandatory)
      * @return a list of applications
      */
-	public static Application[] getApps(Context ctx) {
+	public static DroidApp[] getApps(Context ctx) {
 		if (applications != null) {
 			return applications;
 		}
+		String uidspref = ctx.getSharedPreferences(PREFS_NAME, 0).getString(PREF_ALLOWEDUIDS, "");
+		int allowed[];
+		if (uidspref.length() > 0) {
+			StringTokenizer tok = new StringTokenizer(uidspref, "|");
+			allowed = new int[tok.countTokens()];
+			for (int i=0; i<allowed.length; i++) {
+				allowed[i] = Integer.parseInt(tok.nextToken());
+			}
+		} else {
+			allowed = new int[0];
+		}
+		Arrays.sort(allowed);
 		StringBuilder res = new StringBuilder();
 		try {
 			// TODO - I bet there is a better way to find applications, but this one works for now
@@ -138,13 +175,13 @@ public final class Api {
 				alert(ctx, "error listing /data/data. exitcode: " + exitcode + "\n" + res);
 				return null;
 			}
-			HashMap<Integer, Application> map = new HashMap<Integer, Application>();
+			HashMap<Integer, DroidApp> map = new HashMap<Integer, DroidApp>();
 			int index = 0;
 			int len = res.length();
 			int end = 0;
 			Integer uid;
 			String pkg;
-			Application app;
+			DroidApp app;
 			while (index < len) {
 				/*
 				 * Output line example
@@ -164,7 +201,7 @@ public final class Api {
 					pkg = res.substring(index + 56, end).trim();
 					app = map.get(uid);
 					if (app == null) {
-						app = new Application();
+						app = new DroidApp();
 						app.uid = uid;
 						app.pkgs = new String[] { pkg };
 						map.put(uid, app);
@@ -174,8 +211,7 @@ public final class Api {
 						newpkgs[app.pkgs.length] = pkg;
 						app.pkgs = newpkgs;
 					}
-					// TODO - read allowed packages from a database
-					if (pkg.equals("com.android.browser") || pkg.equals("com.google.android.apps.maps")) {
+					if (Arrays.binarySearch(allowed, uid) >= 0) {
 						app.allowed = true;
 					}
 				} catch (Exception e) {
@@ -183,9 +219,9 @@ public final class Api {
 				}
 				index = end + 1; // next line
 			}
-			applications = new Application[map.size()];
+			applications = new DroidApp[map.size()];
 			index = 0;
-			for (Application application : map.values()) applications[index++] = application;
+			for (DroidApp application : map.values()) applications[index++] = application;
 			return applications;
 		} catch (Exception e) {
 			alert(ctx, "error: " + e);
@@ -247,9 +283,18 @@ public final class Api {
     /**
      * Small structure to hold an application info
      */
-	public static final class Application {
+	public static final class DroidApp {
     	int uid;
     	String pkgs[];
     	boolean allowed;
+    	@Override
+    	public String toString() {
+    		String s = uid + ":";
+    		for (int i=0; i<pkgs.length; i++) {
+    			if (i != 0) s += ";";
+    			s += pkgs[i];
+    		}
+    		return s;
+    	}
     }
 }
