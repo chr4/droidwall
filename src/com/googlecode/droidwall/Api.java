@@ -30,25 +30,29 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.StringTokenizer;
 
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
-import android.util.Log;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 
 /**
  * Contains shared programming interfaces.
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
+	public static final String VERSION = "1.0";
+	
 	public static final String PREFS_NAME = "DroidWallPrefs";
 	public static final String PREF_ALLOWEDUIDS = "AllowedUids";
 	/** shell file path (using /sqlite_stmt_journals since it is writable and in-memory) */
 	private static File SHELL_FILE = new File("/sqlite_stmt_journals/droidwall.sh");
 	// Cached applications
-	private static DroidApp applications[] = null;
+	public static DroidApp applications[] = null;
 
     /**
      * Display a simple alert box
@@ -72,11 +76,11 @@ public final class Api {
 		SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		final DroidApp[] apps = getApps(ctx);
 		// Builds a pipe-separated list of uids
-		StringBuilder newuids = new StringBuilder();
+		final StringBuilder newuids = new StringBuilder();
 		for (int i=0; i<apps.length; i++) {
 			if (apps[i].allowed) {
 				if (newuids.length() != 0) newuids.append('|');
-				newuids.append(apps[i].uid);
+				newuids.append(apps[i].username);
 			}
 		}
 		// save the new list of uids if necessary
@@ -88,7 +92,7 @@ public final class Api {
 		if (!purgeIptables(ctx)) {
 			return;
 		}
-    	StringBuilder script = new StringBuilder();
+    	final StringBuilder script = new StringBuilder();
 		try {
 			int code;
 			for (DroidApp app : apps) {
@@ -100,7 +104,7 @@ public final class Api {
 	    	StringBuilder res = new StringBuilder();
 			code = runScriptAsRoot(script.toString(), res);
 			if (code != 0) {
-				alert(ctx, "error adding refreshing iptables. Exit code: " + code + "\n" + res);
+				alert(ctx, "error refreshing iptables. Exit code: " + code + "\n" + res);
 			}
 		} catch (Exception e) {
 			alert(ctx, "error refreshing iptables: " + e);
@@ -156,71 +160,44 @@ public final class Api {
 			return applications;
 		}
 		String uidspref = ctx.getSharedPreferences(PREFS_NAME, 0).getString(PREF_ALLOWEDUIDS, "");
-		int allowed[];
+		String allowed[];
 		if (uidspref.length() > 0) {
 			StringTokenizer tok = new StringTokenizer(uidspref, "|");
-			allowed = new int[tok.countTokens()];
+			allowed = new String[tok.countTokens()];
 			for (int i=0; i<allowed.length; i++) {
-				allowed[i] = Integer.parseInt(tok.nextToken());
+				allowed[i] = tok.nextToken();
 			}
 		} else {
-			allowed = new int[0];
+			allowed = new String[0];
 		}
 		Arrays.sort(allowed);
-		StringBuilder res = new StringBuilder();
 		try {
-			// TODO - I bet there is a better way to find applications, but this one works for now
-			int exitcode = runScriptAsRoot("ls -Anl /data/data\n", res);
-			if (exitcode != 0) {
-				alert(ctx, "error listing /data/data. exitcode: " + exitcode + "\n" + res);
-				return null;
-			}
-			HashMap<Integer, DroidApp> map = new HashMap<Integer, DroidApp>();
-			int index = 0;
-			int len = res.length();
-			int end = 0;
-			Integer uid;
-			String pkg;
+			final PackageManager pkgmanager = ctx.getPackageManager();
+			final List<ApplicationInfo> installed = pkgmanager.getInstalledApplications(0);
+			final HashMap<Integer, DroidApp> map = new HashMap<Integer, DroidApp>();
+			String name;
 			DroidApp app;
-			while (index < len) {
-				/*
-				 * Output line example
-				 * drwxr-xr-x 1 10028 10028 2048 May 14 13:21 com.android.browser
-				 * 012345678901234567890123456789012345678901234567890123456789
-				 *              16    25                      56
-				 */
-				end = res.indexOf("\n", index);
-				if (end == -1)
-					break; // no more lines
-				if (res.charAt(index) != 'd') { // must be a directory
-					index = end + 1; // next line
-					continue;
+			for (final ApplicationInfo apinfo : installed) {
+				app = map.get(apinfo.uid);
+				name = pkgmanager.getApplicationLabel(apinfo).toString();
+				if (app == null) {
+					app = new DroidApp();
+					app.uid = apinfo.uid;
+					app.username = pkgmanager.getNameForUid(apinfo.uid);
+					app.names = new String[] { name };
+					map.put(apinfo.uid, app);
+				} else {
+					final String newnames[] = new String[app.names.length + 1];
+					System.arraycopy(app.names, 0, newnames, 0, app.names.length);
+					newnames[app.names.length] = name;
+					app.names = newnames;
 				}
-				try {
-					uid = new Integer(res.substring(index + 16, index + 25).trim());
-					pkg = res.substring(index + 56, end).trim();
-					app = map.get(uid);
-					if (app == null) {
-						app = new DroidApp();
-						app.uid = uid;
-						app.pkgs = new String[] { pkg };
-						map.put(uid, app);
-					} else {
-						String newpkgs[] = new String[app.pkgs.length + 1];
-						System.arraycopy(app.pkgs, 0, newpkgs, 0, app.pkgs.length);
-						newpkgs[app.pkgs.length] = pkg;
-						app.pkgs = newpkgs;
-					}
-					if (Arrays.binarySearch(allowed, uid) >= 0) {
-						app.allowed = true;
-					}
-				} catch (Exception e) {
-					Log.e("droidwall", "Error processing line from /data/data", e);
+				if (Arrays.binarySearch(allowed, app.username) >= 0) {
+					app.allowed = true;
 				}
-				index = end + 1; // next line
 			}
 			applications = new DroidApp[map.size()];
-			index = 0;
+			int index = 0;
 			for (DroidApp application : map.values()) applications[index++] = application;
 			return applications;
 		} catch (Exception e) {
@@ -285,14 +262,15 @@ public final class Api {
      */
 	public static final class DroidApp {
     	int uid;
-    	String pkgs[];
+    	String username;
+    	String names[];
     	boolean allowed;
     	@Override
     	public String toString() {
-    		String s = uid + ":";
-    		for (int i=0; i<pkgs.length; i++) {
-    			if (i != 0) s += ";";
-    			s += pkgs[i];
+    		String s = uid + ": ";
+    		for (int i=0; i<names.length; i++) {
+    			if (i != 0) s += ", ";
+    			s += names[i];
     		}
     		return s;
     	}

@@ -27,13 +27,14 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import android.app.ListActivity;
+import android.app.ProgressDialog;
 import android.os.Bundle;
-import android.view.ContextMenu;
+import android.os.Handler;
+import android.os.Message;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -49,9 +50,13 @@ import com.googlecode.droidwall.Api.DroidApp;
 public class MainActivity extends ListActivity implements OnCheckedChangeListener {
 	
 	// Menu options
-	private static final int MENU_SHOWRULES = 1;
-	private static final int MENU_REFRESH = 2;
-	private static final int MENU_PURGE = 3;
+	private static final int MENU_SHOWRULES	= 1;
+	private static final int MENU_APPLY		= 2;
+	private static final int MENU_PURGE		= 3;
+	private static final int MENU_HELP		= 4;
+	
+	/** progress dialog instance */
+	private ProgressDialog progress = null;
 	
     /** Called when the activity is first created. */
     @Override
@@ -61,6 +66,30 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
     @Override
     protected void onResume() {
     	super.onResume();
+    	if (Api.applications == null) {
+    		// The applications are not cached.. so lets display the progress dialog
+    		progress = ProgressDialog.show(this, "Working...", "Reading installed applications", true);
+        	final Handler handler = new Handler() {
+        		public void handleMessage(Message msg) {
+        			if (progress != null) progress.dismiss();
+        			showApplications();
+        		}
+        	};
+        	new Thread() {
+        		public void run() {
+        			Api.getApps(MainActivity.this);
+        			handler.sendEmptyMessage(0);
+        		}
+        	}.start();
+    	} else {
+    		// the applications are cached, just show the list
+        	showApplications();
+    	}
+    }
+    /**
+     * Show the list of applications
+     */
+    private void showApplications() {
         final DroidApp[] apps = Api.getApps(this);
         Arrays.sort(apps, new Comparator<DroidApp>() {
 			@Override
@@ -82,41 +111,69 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
        			return convertView;
         	}
         };
-        
         setListAdapter(adapter);
     }
     @Override
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
-    	super.onCreateContextMenu(menu, v, menuInfo);
-    }
-    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-    	menu.add(0, MENU_SHOWRULES, 0, "Show rules");
-    	menu.add(0, MENU_REFRESH, 0, "Refresh rules");
-    	menu.add(0, MENU_PURGE, 0, "Purge rules");
+    	menu.add(0, MENU_SHOWRULES, 0, R.string.showrules).setIcon(R.drawable.show);
+    	menu.add(0, MENU_APPLY, 0, R.string.applyrules).setIcon(R.drawable.apply);
+    	menu.add(0, MENU_PURGE, 0, R.string.purgerules).setIcon(R.drawable.purge);
+    	menu.add(0, MENU_HELP, 0, R.string.help).setIcon(R.drawable.help);
     	return true;
     }
     @Override
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
+    	final Handler handler;
     	switch (item.getItemId()) {
     	case MENU_SHOWRULES:
-    		StringBuilder res = new StringBuilder();
-    		try {
-				int code = Api.runScriptAsRoot("iptables -L\n", res);
-				Api.alert(this, "Exit code: " + code + "\n" + res);
-			} catch (Exception e) {
-				Api.alert(this, "error: " + e);
-			}
+    		progress = ProgressDialog.show(this, "Working...", "Please wait", true);
+        	handler = new Handler() {
+        		public void handleMessage(Message msg) {
+        			if (progress != null) progress.dismiss();
+            		try {
+                		final StringBuilder res = new StringBuilder();
+        				Api.runScriptAsRoot("iptables -L\n", res);
+        				Api.alert(MainActivity.this, res);
+        			} catch (Exception e) {
+        				Api.alert(MainActivity.this, "error: " + e);
+        			}
+        			
+        		}
+        	};
+			handler.sendEmptyMessageDelayed(0, 200);
     		return true;
-    	case MENU_REFRESH:
-    		Api.refreshIptables(this);
+    	case MENU_APPLY:
+    		progress = ProgressDialog.show(this, "Working...", "Applying iptables rules.", true);
+        	handler = new Handler() {
+        		public void handleMessage(Message msg) {
+        			Api.refreshIptables(MainActivity.this);
+        			if (progress != null) progress.dismiss();
+        		}
+        	};
+			handler.sendEmptyMessageDelayed(0, 200);
     		return true;
     	case MENU_PURGE:
-    		Api.purgeIptables(this);
+    		progress = ProgressDialog.show(this, "Working...", "Deleting iptables rules.", true);
+        	handler = new Handler() {
+        		public void handleMessage(Message msg) {
+        			Api.purgeIptables(MainActivity.this);
+        			if (progress != null) progress.dismiss();
+        		}
+        	};
+			handler.sendEmptyMessageDelayed(0, 200);
+    		return true;
+    	case MENU_HELP:
+    		Api.alert(this, "Droid Wall v" + Api.VERSION + "\nAuthor: Rodrigo Rosauro\n\n" +
+				"Mark the applications that are allowed to use GPRS/3G then click on \"Apply rules\"\n\n" +
+				"Click on \"Show rules\" to display current iptables rules output.\n\n" +
+				"Click on \"Purge rules\" to remove any iptables rules TEMPORARILY (until the next \"Apply rules\" or reboot).");
     		return true;
     	}
     	return false;
     }
+	/**
+	 * Called an application is check/unchecked
+	 */
 	@Override
 	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 		DroidApp app = (DroidApp) buttonView.getTag();
