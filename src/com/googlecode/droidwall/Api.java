@@ -123,19 +123,19 @@ public final class Api {
 			if (code != 0) {
 				alert(ctx, "error purging iptables. exit code: " + code + "\n" + res);
 			}
-			
-			int len = res.length();
+			final int len = res.length();
 			int count = 0;
 			int index = 0;
 			while (index<len) {
 				index = (res.indexOf("\n", index) + 1);
 				if (index != 0) count++;
 			}
+			// iptables output contains at least 8 lines that we don't care about
 			if (count <= 8) {
 				return true;
 			}
 			count -= 8;
-	    	StringBuilder script = new StringBuilder();
+	    	final StringBuilder script = new StringBuilder();
 			while (count-- > 0) {
 				script.append("iptables -D OUTPUT 1 || exit 1\n");
 			}
@@ -157,12 +157,15 @@ public final class Api {
      */
 	public static DroidApp[] getApps(Context ctx) {
 		if (applications != null) {
+			// return cached instance
 			return applications;
 		}
-		String uidspref = ctx.getSharedPreferences(PREFS_NAME, 0).getString(PREF_ALLOWEDUIDS, "");
+		// allowed application names separated by pipe '|' (persisted)
+		final String uidspref = ctx.getSharedPreferences(PREFS_NAME, 0).getString(PREF_ALLOWEDUIDS, "");
 		String allowed[];
 		if (uidspref.length() > 0) {
-			StringTokenizer tok = new StringTokenizer(uidspref, "|");
+			// Check which applications are allowed
+			final StringTokenizer tok = new StringTokenizer(uidspref, "|");
 			allowed = new String[tok.countTokens()];
 			for (int i=0; i<allowed.length; i++) {
 				allowed[i] = tok.nextToken();
@@ -170,6 +173,7 @@ public final class Api {
 		} else {
 			allowed = new String[0];
 		}
+		// Sort the array to allow using "Arrays.binarySearch" later
 		Arrays.sort(allowed);
 		try {
 			final PackageManager pkgmanager = ctx.getPackageManager();
@@ -192,7 +196,8 @@ public final class Api {
 					newnames[app.names.length] = name;
 					app.names = newnames;
 				}
-				if (Arrays.binarySearch(allowed, app.username) >= 0) {
+				// check if this application is allowed
+				if (!app.allowed && Arrays.binarySearch(allowed, app.username) >= 0) {
 					app.allowed = true;
 				}
 			}
@@ -223,7 +228,7 @@ public final class Api {
     		runAsRoot("touch " + SHELL_FILE.getAbsolutePath() + ";chmod 777 " + SHELL_FILE.getAbsolutePath(), null);
     	}
     	// write the script
-    	FileWriter w = new FileWriter(SHELL_FILE);
+    	final FileWriter w = new FileWriter(SHELL_FILE);
     	w.write(script);
     	w.close();
     	// run it
@@ -242,18 +247,22 @@ public final class Api {
      * @throws InterruptedException if the thread is interrupted
      */
 	public static int runAsRoot(String command, StringBuilder res) throws IOException, InterruptedException {
-		char buf[] = new char[1024];
-		Process exec = Runtime.getRuntime().exec(new String[]{"su", "-c", command});
+		// Create the "su" request to run the command
+		final Process exec = Runtime.getRuntime().exec(new String[]{"su", "-c", command});
+		final char buf[] = new char[1024];
+		// Consume the "stdout"
 		InputStreamReader r = new InputStreamReader(exec.getInputStream());
 		int read=0;
 		while ((read=r.read(buf)) != -1) {
 			if (res != null) res.append(buf, 0, read);
 		}
+		// Consume the "stderr"
 		r = new InputStreamReader(exec.getErrorStream());
 		read=0;
 		while ((read=r.read(buf)) != -1) {
 			if (res != null) res.append(buf, 0, read);
 		}
+		// return the process exit code
 		return exec.waitFor();
     }
 
@@ -261,18 +270,26 @@ public final class Api {
      * Small structure to hold an application info
      */
 	public static final class DroidApp {
+		/** linux user id */
     	int uid;
+    	/** application user name (android actually uses a package name to identify) */
     	String username;
+    	/** application names belonging to this user id */
     	String names[];
+    	/** indicates if this application is allowed to access data */
     	boolean allowed;
+    	
+    	/**
+    	 * Screen representation of this application
+    	 */
     	@Override
     	public String toString() {
-    		String s = uid + ": ";
+    		final StringBuilder s = new StringBuilder(uid + ": ");
     		for (int i=0; i<names.length; i++) {
-    			if (i != 0) s += ", ";
-    			s += names[i];
+    			if (i != 0) s.append(", ");
+    			s.append(names[i]);
     		}
-    		return s;
+    		return s.toString();
     	}
     }
 }
