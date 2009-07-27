@@ -163,8 +163,11 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
 			handler.sendEmptyMessageDelayed(0, 200);
     		return true;
     	case MENU_HELP:
-    		Api.alert(this, "Droid Wall v" + Api.VERSION + "\nAuthor: Rodrigo Rosauro\n\n" +
-				"Mark the applications that are allowed to use GPRS/3G then click on \"Apply rules\"\n\n" +
+    		Api.alert(this, "Droid Wall v" + Api.VERSION + "\n" +
+    			"Author: Rodrigo Rosauro\n" +
+    			"http://droidwall.googlecode.com/\n\n" +
+				"Mark the applications that are ALLOWED to use GPRS/3G then click on \"Apply rules\".\n" +
+				"Important: unmarked applications will NOT be able to access your data plan, but they will still be able to access Wifi.\n\n" +
 				"Click on \"Show rules\" to display current iptables rules output.\n\n" +
 				"Click on \"Purge rules\" to remove any iptables rules TEMPORARILY (until the next \"Apply rules\" or reboot).");
     		return true;
