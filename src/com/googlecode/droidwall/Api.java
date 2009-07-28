@@ -45,7 +45,7 @@ import android.content.pm.PackageManager;
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
-	public static final String VERSION = "1.1";
+	public static final String VERSION = "1.2";
 	
 	public static final String PREFS_NAME = "DroidWallPrefs";
 	public static final String PREF_ALLOWEDUIDS = "AllowedUids";
@@ -68,10 +68,11 @@ public final class Api {
     /**
      * Purge and re-add all rules.
      * @param ctx application context (mandatory)
+     * @param showErrors indicates if errors should be alerted
      */
-	public static void refreshIptables(Context ctx) {
+	public static boolean refreshIptables(Context ctx, boolean showErrors) {
 		if (ctx == null) {
-			return;
+			return false;
 		}
 		SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		final DroidApp[] apps = getApps(ctx);
@@ -89,26 +90,27 @@ public final class Api {
 			edit.putString(PREF_ALLOWEDUIDS, newuids.toString());
 			edit.commit();
 		}
-		if (!purgeIptables(ctx)) {
-			return;
-		}
     	final StringBuilder script = new StringBuilder();
 		try {
 			int code;
+			script.append("iptables -F || exit 1\n");
 			for (DroidApp app : apps) {
 				if (app.allowed) {
-					script.append("iptables -A OUTPUT -o rmnet+ -m owner --uid-owner " + app.uid + " -j ACCEPT\n");
+					script.append("iptables -A OUTPUT -o rmnet+ -m owner --uid-owner " + app.uid + " -j ACCEPT || exit 1\n");
 				}
 			}
-			script.append("iptables -A OUTPUT -o rmnet+ -j REJECT\n");
+			script.append("iptables -A OUTPUT -o rmnet+ -j REJECT || exit 1\n");
 	    	StringBuilder res = new StringBuilder();
 			code = runScriptAsRoot(script.toString(), res);
-			if (code != 0) {
-				alert(ctx, "error refreshing iptables. Exit code: " + code + "\n" + res);
+			if (showErrors && code != 0) {
+				alert(ctx, "error applying iptables rules. Exit code: " + code + "\n" + res);
+			} else {
+				return true;
 			}
 		} catch (Exception e) {
-			alert(ctx, "error refreshing iptables: " + e);
+			if (showErrors) alert(ctx, "error refreshing iptables: " + e);
 		}
+		return false;
     }
     
     /**
@@ -119,30 +121,10 @@ public final class Api {
 	public static boolean purgeIptables(Context ctx) {
     	StringBuilder res = new StringBuilder();
 		try {
-			int code = runScriptAsRoot("iptables -L\n", res);
+			int code = runScriptAsRoot("iptables -F || exit 1\n", res);
 			if (code != 0) {
 				alert(ctx, "error purging iptables. exit code: " + code + "\n" + res);
-			}
-			final int len = res.length();
-			int count = 0;
-			int index = 0;
-			while (index<len) {
-				index = (res.indexOf("\n", index) + 1);
-				if (index != 0) count++;
-			}
-			// iptables output contains at least 8 lines that we don't care about
-			if (count <= 8) {
-				return true;
-			}
-			count -= 8;
-	    	final StringBuilder script = new StringBuilder();
-			while (count-- > 0) {
-				script.append("iptables -D OUTPUT 1 || exit 1\n");
-			}
-			res.setLength(0);
-			code = runScriptAsRoot(script.toString(), res);
-			if (code != 0) {
-				alert(ctx, "error purging iptables. exit code: " + code + "\n" + res);
+				return false;
 			}
 			return true;
 		} catch (Exception e) {
@@ -150,6 +132,20 @@ public final class Api {
 			return false;
 		}
     }
+	
+	/**
+	 * Display iptables rules output
+	 * @param ctx application context
+	 */
+	public static void showIptablesRules(Context ctx) {
+		try {
+    		final StringBuilder res = new StringBuilder();
+			runScriptAsRoot("iptables -L\n", res);
+			alert(ctx, res);
+		} catch (Exception e) {
+			alert(ctx, "error: " + e);
+		}
+	}
 
     /**
      * @param ctx application context (mandatory)

@@ -39,6 +39,7 @@ import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ListAdapter;
+import android.widget.Toast;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 
 import com.googlecode.droidwall.Api.DroidApp;
@@ -130,14 +131,7 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
         	handler = new Handler() {
         		public void handleMessage(Message msg) {
         			if (progress != null) progress.dismiss();
-            		try {
-                		final StringBuilder res = new StringBuilder();
-        				Api.runScriptAsRoot("iptables -L\n", res);
-        				Api.alert(MainActivity.this, res);
-        			} catch (Exception e) {
-        				Api.alert(MainActivity.this, "error: " + e);
-        			}
-        			
+        			Api.showIptablesRules(MainActivity.this);
         		}
         	};
 			handler.sendEmptyMessageDelayed(0, 200);
@@ -146,7 +140,9 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
     		progress = ProgressDialog.show(this, "Working...", "Applying iptables rules.", true);
         	handler = new Handler() {
         		public void handleMessage(Message msg) {
-        			Api.refreshIptables(MainActivity.this);
+        			if (Api.refreshIptables(MainActivity.this, true)) {
+        				Toast.makeText(MainActivity.this, "Rules applied with success", Toast.LENGTH_SHORT).show();
+        			}
         			if (progress != null) progress.dismiss();
         		}
         	};
@@ -156,7 +152,9 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
     		progress = ProgressDialog.show(this, "Working...", "Deleting iptables rules.", true);
         	handler = new Handler() {
         		public void handleMessage(Message msg) {
-        			Api.purgeIptables(MainActivity.this);
+        			if (Api.purgeIptables(MainActivity.this)) {
+        				Toast.makeText(MainActivity.this, "Rules purged with success", Toast.LENGTH_SHORT).show();
+        			}
         			if (progress != null) progress.dismiss();
         		}
         	};
