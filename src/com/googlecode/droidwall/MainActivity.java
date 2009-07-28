@@ -131,7 +131,8 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
         	handler = new Handler() {
         		public void handleMessage(Message msg) {
         			if (progress != null) progress.dismiss();
-        			Api.showIptablesRules(MainActivity.this);
+        			if (!Api.hasRootAccess(MainActivity.this)) return;
+           			Api.showIptablesRules(MainActivity.this);
         		}
         	};
 			handler.sendEmptyMessageDelayed(0, 200);
@@ -140,10 +141,11 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
     		progress = ProgressDialog.show(this, "Working...", "Applying iptables rules.", true);
         	handler = new Handler() {
         		public void handleMessage(Message msg) {
+        			if (progress != null) progress.dismiss();
+        			if (!Api.hasRootAccess(MainActivity.this)) return;
         			if (Api.refreshIptables(MainActivity.this, true)) {
         				Toast.makeText(MainActivity.this, "Rules applied with success", Toast.LENGTH_SHORT).show();
         			}
-        			if (progress != null) progress.dismiss();
         		}
         	};
 			handler.sendEmptyMessageDelayed(0, 200);
@@ -152,10 +154,11 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
     		progress = ProgressDialog.show(this, "Working...", "Deleting iptables rules.", true);
         	handler = new Handler() {
         		public void handleMessage(Message msg) {
+        			if (progress != null) progress.dismiss();
+        			if (!Api.hasRootAccess(MainActivity.this)) return;
         			if (Api.purgeIptables(MainActivity.this)) {
         				Toast.makeText(MainActivity.this, "Rules purged with success", Toast.LENGTH_SHORT).show();
         			}
-        			if (progress != null) progress.dismiss();
         		}
         	};
 			handler.sendEmptyMessageDelayed(0, 200);

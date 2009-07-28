@@ -23,11 +23,9 @@
 
 package com.googlecode.droidwall;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -45,14 +43,14 @@ import android.content.pm.PackageManager;
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
-	public static final String VERSION = "1.2";
+	public static final String VERSION = "1.3";
 	
 	public static final String PREFS_NAME = "DroidWallPrefs";
 	public static final String PREF_ALLOWEDUIDS = "AllowedUids";
-	/** shell file path (using /sqlite_stmt_journals since it is writable and in-memory) */
-	private static File SHELL_FILE = new File("/sqlite_stmt_journals/droidwall.sh");
 	// Cached applications
 	public static DroidApp applications[] = null;
+	// Do we have root access?
+	private static boolean hasroot = false;
 
     /**
      * Display a simple alert box
@@ -93,13 +91,13 @@ public final class Api {
     	final StringBuilder script = new StringBuilder();
 		try {
 			int code;
-			script.append("iptables -F || exit 1\n");
+			script.append("iptables -F || exit\n");
 			for (DroidApp app : apps) {
 				if (app.allowed) {
-					script.append("iptables -A OUTPUT -o rmnet+ -m owner --uid-owner " + app.uid + " -j ACCEPT || exit 1\n");
+					script.append("iptables -A OUTPUT -o rmnet+ -m owner --uid-owner " + app.uid + " -j ACCEPT || exit\n");
 				}
 			}
-			script.append("iptables -A OUTPUT -o rmnet+ -j REJECT || exit 1\n");
+			script.append("iptables -A OUTPUT -o rmnet+ -j REJECT || exit\n");
 	    	StringBuilder res = new StringBuilder();
 			code = runScriptAsRoot(script.toString(), res);
 			if (showErrors && code != 0) {
@@ -121,7 +119,7 @@ public final class Api {
 	public static boolean purgeIptables(Context ctx) {
     	StringBuilder res = new StringBuilder();
 		try {
-			int code = runScriptAsRoot("iptables -F || exit 1\n", res);
+			int code = runScriptAsRoot("iptables -F || exit\n", res);
 			if (code != 0) {
 				alert(ctx, "error purging iptables. exit code: " + code + "\n" + res);
 				return false;
@@ -206,11 +204,28 @@ public final class Api {
 		}
 		return null;
 	}
+	/**
+	 * Check if we have root access
+	 * @param ctx optional context to display alert messages
+	 * @return boolean true if we have root
+	 */
+	public static boolean hasRootAccess(Context ctx) {
+		if (hasroot) return true;
+		try {
+			// Run an empty script just to check root access
+			if (runScriptAsRoot("", null) == 0) {
+				hasroot = true;
+				return true;
+			}
+		} catch (Exception e) {
+		}
+		alert(ctx, "Could not acquire root access.\n" +
+			"You need a rooted phone to run Droid Wall.\n\n" +
+			"If this phone is already rooted, please make sure Droid Wall has enough permissions to execute the \"su\" command.");
+		return false;
+	}
     /**
      * Runs a script as root (multiple commands separated by "\n").
-     * The script will be written to a file and then executed as root.
-     * This way we bypass the "superuser permission" request for each different command.
-     * Without this hack the user would need to authorize each command individually (since they are always different).
      * 
      * @param script the script to be executed
      * @param res the script output response (stdout + stderr)
@@ -219,47 +234,37 @@ public final class Api {
      * @throws InterruptedException if the thread is interrupted
      */
 	public static int runScriptAsRoot(String script, StringBuilder res) throws IOException, InterruptedException {
-    	// ensures that the shell file exists
-    	if (!SHELL_FILE.exists()) {
-    		runAsRoot("touch " + SHELL_FILE.getAbsolutePath() + ";chmod 777 " + SHELL_FILE.getAbsolutePath(), null);
-    	}
-    	// write the script
-    	final FileWriter w = new FileWriter(SHELL_FILE);
-    	w.write(script);
-    	w.close();
-    	// run it
-    	int code = runAsRoot(SHELL_FILE.getAbsolutePath(), res);
-    	// truncate the script (don't waste memory)
-    	new FileOutputStream(SHELL_FILE).close();
-    	return code;
-    }
-    /**
-     * Run a single command as root.
-     * The command will be executed with the "su -c command" syntax.
-     * @param command command to be executed
-     * @param res commnand output response (stdout + stderrr)
-     * @return program exit code
-     * @throws IOException on any error executing the command
-     * @throws InterruptedException if the thread is interrupted
-     */
-	public static int runAsRoot(String command, StringBuilder res) throws IOException, InterruptedException {
 		// Create the "su" request to run the command
-		final Process exec = Runtime.getRuntime().exec(new String[]{"su", "-c", command});
-		final char buf[] = new char[1024];
-		// Consume the "stdout"
-		InputStreamReader r = new InputStreamReader(exec.getInputStream());
-		int read=0;
-		while ((read=r.read(buf)) != -1) {
-			if (res != null) res.append(buf, 0, read);
+		// note that this will create a shell that we must interact to (using stdin/stdout)
+		final Process exec = Runtime.getRuntime().exec("su");
+		try {
+			final OutputStreamWriter out = new OutputStreamWriter(exec.getOutputStream());
+			// Write the script to be executed
+			out.write(script);
+			// Ensure that the last character is an "enter"
+			if (!script.endsWith("\n")) out.write("\n");
+			out.flush();
+			// Terminate the "su" process
+			out.write("exit\n");
+			out.flush();
+			final char buf[] = new char[1024];
+			// Consume the "stdout"
+			InputStreamReader r = new InputStreamReader(exec.getInputStream());
+			int read=0;
+			while ((read=r.read(buf)) != -1) {
+				if (res != null) res.append(buf, 0, read);
+			}
+			// Consume the "stderr"
+			r = new InputStreamReader(exec.getErrorStream());
+			read=0;
+			while ((read=r.read(buf)) != -1) {
+				if (res != null) res.append(buf, 0, read);
+			}
+			// return the process exit code
+			return exec.waitFor();
+		} finally {
+			exec.destroy();
 		}
-		// Consume the "stderr"
-		r = new InputStreamReader(exec.getErrorStream());
-		read=0;
-		while ((read=r.read(buf)) != -1) {
-			if (res != null) res.append(buf, 0, read);
-		}
-		// return the process exit code
-		return exec.waitFor();
     }
 
     /**
