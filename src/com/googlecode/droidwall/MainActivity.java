@@ -31,6 +31,7 @@ import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -39,6 +40,7 @@ import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ListAdapter;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 
@@ -58,11 +60,16 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
 	
 	/** progress dialog instance */
 	private ProgressDialog progress = null;
+	/** have we alerted about incompatible apps already? */
+	private boolean alerted = false;
 	
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (savedInstanceState != null) {
+        	alerted = savedInstanceState.getBoolean("alerted", false);
+        }
     }
     @Override
     protected void onResume() {
@@ -87,11 +94,28 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
         	showApplications();
     	}
     }
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+    	if (alerted) outState.putBoolean("alerted", true);
+    }
+    /**
+     * Check and alert for incompatible apps
+     */
+    private void checkIncompatibleApps() {
+        if (!alerted && Api.hastether != null) {
+        	Api.alert(this, "Droid Wall has detected that you have the \"" + Api.hastether + "\" application installed on your system.\n\n" +
+        		"Since this application also uses iptables, it will overwrite Droid Wall rules (and vice-versa).\n" +
+        		"Please make sure that you re-apply Droid Wall rules every time you use \"" + Api.hastether + "\".");
+        	alerted = true;
+        }
+    }
     /**
      * Show the list of applications
      */
     private void showApplications() {
         final DroidApp[] apps = Api.getApps(this);
+        checkIncompatibleApps();
+        // Sort applications - selected first
         Arrays.sort(apps, new Comparator<DroidApp>() {
 			@Override
 			public int compare(DroidApp o1, DroidApp o2) {
@@ -100,15 +124,28 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
 				return 1;
 			}
         });
-		ListAdapter adapter = new ArrayAdapter<DroidApp>(this,R.layout.listitem,R.id.itemtext,apps) {
+        final LayoutInflater inflater = getLayoutInflater();
+		final ListAdapter adapter = new ArrayAdapter<DroidApp>(this,R.layout.listitem,R.id.itemtext,apps) {
         	@Override
         	public View getView(int position, View convertView, ViewGroup parent) {
-       			convertView = super.getView(position, convertView, parent);
-        		final DroidApp item = this.getItem(position);
-        		final CheckBox box = (CheckBox) convertView.findViewById(R.id.itemcheck);
-       			box.setTag(item);
-				box.setChecked(item.allowed);
-       			box.setOnCheckedChangeListener(MainActivity.this);
+       			ListEntry entry;
+        		if (convertView == null) {
+        			// Inflate a new view
+        			convertView = inflater.inflate(R.layout.listitem, parent, false);
+       				entry = new ListEntry();
+       				entry.box = (CheckBox) convertView.findViewById(R.id.itemcheck);
+       				entry.text = (TextView) convertView.findViewById(R.id.itemtext);
+       				convertView.setTag(entry);
+       				entry.box.setOnCheckedChangeListener(MainActivity.this);
+        		} else {
+        			// Convert an existing view
+        			entry = (ListEntry) convertView.getTag();
+        		}
+        		final DroidApp app = apps[position];
+        		entry.text.setText(app.toString());
+        		final CheckBox box = entry.box;
+        		box.setTag(app);
+        		box.setChecked(app.allowed);
        			return convertView;
         	}
         };
@@ -135,7 +172,7 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
            			Api.showIptablesRules(MainActivity.this);
         		}
         	};
-			handler.sendEmptyMessageDelayed(0, 200);
+			handler.sendEmptyMessageDelayed(0, 100);
     		return true;
     	case MENU_APPLY:
     		progress = ProgressDialog.show(this, "Working...", "Applying iptables rules.", true);
@@ -143,12 +180,12 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
         		public void handleMessage(Message msg) {
         			if (progress != null) progress.dismiss();
         			if (!Api.hasRootAccess(MainActivity.this)) return;
-        			if (Api.refreshIptables(MainActivity.this, true)) {
+        			if (Api.applyIptablesRules(MainActivity.this, true)) {
         				Toast.makeText(MainActivity.this, "Rules applied with success", Toast.LENGTH_SHORT).show();
         			}
         		}
         	};
-			handler.sendEmptyMessageDelayed(0, 200);
+			handler.sendEmptyMessageDelayed(0, 100);
     		return true;
     	case MENU_PURGE:
     		progress = ProgressDialog.show(this, "Working...", "Deleting iptables rules.", true);
@@ -161,12 +198,12 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
         			}
         		}
         	};
-			handler.sendEmptyMessageDelayed(0, 200);
+			handler.sendEmptyMessageDelayed(0, 100);
     		return true;
     	case MENU_HELP:
     		Api.alert(this, "Droid Wall v" + Api.VERSION + "\n" +
     			"Author: Rodrigo Rosauro\n" +
-    			"http://droidwall.googlecode.com/\n\n" +
+    			"droidwall.googlecode.com\n\n" +
 				"Mark the applications that are ALLOWED to use GPRS/3G then click on \"Apply rules\".\n" +
 				"Important: unmarked applications will NOT be able to access your data plan, but they will still be able to access Wifi.\n\n" +
 				"Click on \"Show rules\" to display current iptables rules output.\n\n" +
@@ -180,7 +217,14 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
 	 */
 	@Override
 	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-		DroidApp app = (DroidApp) buttonView.getTag();
-		app.allowed = isChecked;
+		final DroidApp app = (DroidApp) buttonView.getTag();
+		if (app != null) {
+			app.allowed = isChecked;
+		}
+	}
+	
+	private static class ListEntry {
+		private CheckBox box;
+		private TextView text;
 	}
 }

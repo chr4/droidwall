@@ -37,18 +37,21 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.util.Log;
 
 /**
  * Contains shared programming interfaces.
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
-	public static final String VERSION = "1.3";
+	public static final String VERSION = "1.3.0";
 	
 	public static final String PREFS_NAME = "DroidWallPrefs";
 	public static final String PREF_ALLOWEDUIDS = "AllowedUids";
 	// Cached applications
 	public static DroidApp applications[] = null;
+	// Do we have "Wireless Tether for Root Users" installed?
+	public static String hastether = null;
 	// Do we have root access?
 	private static boolean hasroot = false;
 
@@ -59,7 +62,10 @@ public final class Api {
      */
 	public static void alert(Context ctx, CharSequence msg) {
     	if (ctx != null) {
-        	new AlertDialog.Builder(ctx).setMessage(msg).show();
+        	new AlertDialog.Builder(ctx)
+        	.setNeutralButton(android.R.string.ok, null)
+        	.setMessage(msg)
+        	.show();
     	}
     }
     
@@ -68,11 +74,11 @@ public final class Api {
      * @param ctx application context (mandatory)
      * @param showErrors indicates if errors should be alerted
      */
-	public static boolean refreshIptables(Context ctx, boolean showErrors) {
+	public static boolean applyIptablesRules(Context ctx, boolean showErrors) {
 		if (ctx == null) {
 			return false;
 		}
-		SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
+		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		final DroidApp[] apps = getApps(ctx);
 		// Builds a pipe-separated list of uids
 		final StringBuilder newuids = new StringBuilder();
@@ -101,7 +107,21 @@ public final class Api {
 	    	StringBuilder res = new StringBuilder();
 			code = runScriptAsRoot(script.toString(), res);
 			if (showErrors && code != 0) {
-				alert(ctx, "error applying iptables rules. Exit code: " + code + "\n" + res);
+				String msg = res.toString();
+				Log.e("DroidWall", msg);
+				// Search for common error messages
+				if (msg.indexOf("Couldn't find match `owner'") != -1) {
+					alert(ctx, "Error applying iptables rules.\nExit code: " + code + "\n\n" +
+						"It seems your Linux kernel was not compiled with the netfilter \"owner\" module enabled, which is required for Droid Wall to work properly.\n\n" +
+						"You should check if there is an updated version of your Android ROM compiled with this kernel module.");
+				} else {
+					// Remove unnecessary help message from output
+					if (msg.indexOf("\nTry `iptables -h' or 'iptables --help' for more information.") != -1) {
+						msg = msg.replace("\nTry `iptables -h' or 'iptables --help' for more information.", "");
+					}
+					// Try `iptables -h' or 'iptables --help' for more information.
+					alert(ctx, "Error applying iptables rules. Exit code: " + code + "\n\n" + msg.trim());
+				}
 			} else {
 				return true;
 			}
@@ -112,7 +132,7 @@ public final class Api {
     }
     
     /**
-     * Purge all iptables OUTPUT rules.
+     * Purge all iptables rules.
      * @param ctx context optional context for alert messages
      * @return true if the rules were purged
      */
@@ -154,21 +174,22 @@ public final class Api {
 			// return cached instance
 			return applications;
 		}
+		hastether = null;
 		// allowed application names separated by pipe '|' (persisted)
-		final String uidspref = ctx.getSharedPreferences(PREFS_NAME, 0).getString(PREF_ALLOWEDUIDS, "");
+		final String savedNames = ctx.getSharedPreferences(PREFS_NAME, 0).getString(PREF_ALLOWEDUIDS, "");
 		String allowed[];
-		if (uidspref.length() > 0) {
+		if (savedNames.length() > 0) {
 			// Check which applications are allowed
-			final StringTokenizer tok = new StringTokenizer(uidspref, "|");
+			final StringTokenizer tok = new StringTokenizer(savedNames, "|");
 			allowed = new String[tok.countTokens()];
 			for (int i=0; i<allowed.length; i++) {
 				allowed[i] = tok.nextToken();
 			}
+			// Sort the array to allow using "Arrays.binarySearch" later
+			Arrays.sort(allowed);
 		} else {
 			allowed = new String[0];
 		}
-		// Sort the array to allow using "Arrays.binarySearch" later
-		Arrays.sort(allowed);
 		try {
 			final PackageManager pkgmanager = ctx.getPackageManager();
 			final List<ApplicationInfo> installed = pkgmanager.getInstalledApplications(0);
@@ -178,6 +199,10 @@ public final class Api {
 			for (final ApplicationInfo apinfo : installed) {
 				app = map.get(apinfo.uid);
 				name = pkgmanager.getApplicationLabel(apinfo).toString();
+				// Check for the tethering application (which causes conflicts with Droid Wall)
+				if (apinfo.packageName.equals("android.tether")) {
+					hastether = name;
+				}
 				if (app == null) {
 					app = new DroidApp();
 					app.uid = apinfo.uid;
@@ -238,6 +263,9 @@ public final class Api {
 		// note that this will create a shell that we must interact to (using stdin/stdout)
 		final Process exec = Runtime.getRuntime().exec("su");
 		try {
+			// I found that on some rare situations, the su shell will not receive the commands
+			// so we must wait for it the become "ready".
+			Thread.sleep(100);
 			final OutputStreamWriter out = new OutputStreamWriter(exec.getOutputStream());
 			// Write the script to be executed
 			out.write(script);
