@@ -56,7 +56,8 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
 	private static final int MENU_SHOWRULES	= 1;
 	private static final int MENU_APPLY		= 2;
 	private static final int MENU_PURGE		= 3;
-	private static final int MENU_HELP		= 4;
+	private static final int MENU_SETPWD	= 4;
+	private static final int MENU_HELP		= 5;
 	
 	/** progress dialog instance */
 	private ProgressDialog progress = null;
@@ -115,11 +116,11 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
     private void showApplications() {
         final DroidApp[] apps = Api.getApps(this);
         checkIncompatibleApps();
-        // Sort applications - selected first
+        // Sort applications - selected first, then alphabetically
         Arrays.sort(apps, new Comparator<DroidApp>() {
 			@Override
 			public int compare(DroidApp o1, DroidApp o2) {
-				if (o1.allowed == o2.allowed) return 0;
+				if (o1.allowed == o2.allowed) return o1.names[0].compareTo(o2.names[0]);
 				if (o1.allowed) return -1;
 				return 1;
 			}
@@ -156,7 +157,8 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
     	menu.add(0, MENU_SHOWRULES, 0, R.string.showrules).setIcon(R.drawable.show);
     	menu.add(0, MENU_APPLY, 0, R.string.applyrules).setIcon(R.drawable.apply);
     	menu.add(0, MENU_PURGE, 0, R.string.purgerules).setIcon(R.drawable.purge);
-    	menu.add(0, MENU_HELP, 0, R.string.help).setIcon(R.drawable.help);
+    	menu.add(0, MENU_SETPWD, 0, R.string.setpwd).setIcon(R.drawable.lock);
+    	menu.add(0, MENU_HELP, 0, R.string.help).setIcon(android.R.drawable.ic_menu_help);
     	return true;
     }
     @Override
@@ -200,14 +202,11 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
         	};
 			handler.sendEmptyMessageDelayed(0, 100);
     		return true;
+    	case MENU_SETPWD:
+    		Api.alert(this, "Feature not implemented yet...");
+    		return true;
     	case MENU_HELP:
-    		Api.alert(this, "Droid Wall v" + Api.VERSION + "\n" +
-    			"Author: Rodrigo Rosauro\n" +
-    			"droidwall.googlecode.com\n\n" +
-				"Mark the applications that are ALLOWED to use GPRS/3G then click on \"Apply rules\".\n" +
-				"Important: unmarked applications will NOT be able to access your data plan, but they will still be able to access Wifi.\n\n" +
-				"Click on \"Show rules\" to display current iptables rules output.\n\n" +
-				"Click on \"Purge rules\" to remove any iptables rules TEMPORARILY (until the next \"Apply rules\" or reboot).");
+    		new HelpDialog(this).show();
     		return true;
     	}
     	return false;

@@ -4,5 +4,25 @@
     <string name="showrules">Show rules</string>
     <string name="applyrules">Apply rules</string>
     <string name="purgerules">Purge rules</string>
+    <string name="setpwd">Set password</string>
     <string name="help">Help</string>
+    <string name="close">Close</string>
+	<string name="help_dialog_text"><i>Author: Rodrigo Zechin Rosauro</i>
+		\n<i><a href="http://droidwall.googlecode.com">http://droidwall.googlecode.com</a></i>
+		\n
+		\n<i>Droid Wall - Android Firewall</i> is a front-end application for the powerful <b>iptables</b> Linux firewall.
+		It allows you to restrict which applications are permitted to access your cellular data network (GPRS/3G).
+		\nThis is the perfect solution if you don't have an unlimited data plan, or just wants to see your battery lasting longer.
+		\n<b>Using Droid Wall:</b>
+		\nMark the applications that are <b>ALLOWED</b> to use GPRS/3G then click on <b>Apply rules</b>.
+		\n<b>Important:</b> unmarked applications will not be able to access your data plan, but they will still be able to access Wi-fi.
+		\n
+		\nClick on <b>Show rules</b> to display current iptables rules output.
+		\n
+		\nClick on <b>Purge rules</b> to remove any iptables rules TEMPORARILY (until the next <b>Apply rules</b> or reboot).
+		\n
+		\n<b>Password lock:</b>
+		\nYou can set a password lock for Droid Wall by using the <b>Set password</b> menu option.
+		To remove the password protection, just reset it to blank.
+	</string>
 </resources>

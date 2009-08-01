@@ -44,7 +44,7 @@ import android.util.Log;
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
-	public static final String VERSION = "1.3.0";
+	public static final String VERSION = "1.3.1";
 	
 	public static final String PREFS_NAME = "DroidWallPrefs";
 	public static final String PREF_ALLOWEDUIDS = "AllowedUids";
@@ -307,18 +307,23 @@ public final class Api {
     	String names[];
     	/** indicates if this application is allowed to access data */
     	boolean allowed;
+    	/** toString cache */
+    	String tostr;
     	
     	/**
     	 * Screen representation of this application
     	 */
     	@Override
     	public String toString() {
-    		final StringBuilder s = new StringBuilder(uid + ": ");
-    		for (int i=0; i<names.length; i++) {
-    			if (i != 0) s.append(", ");
-    			s.append(names[i]);
+    		if (tostr == null) {
+        		final StringBuilder s = new StringBuilder(uid + ": ");
+        		for (int i=0; i<names.length; i++) {
+        			if (i != 0) s.append(", ");
+        			s.append(names[i]);
+        		}
+        		tostr = s.toString();
     		}
-    		return s.toString();
+    		return tostr;
     	}
     }
 }
