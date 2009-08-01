@@ -203,7 +203,13 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
 			handler.sendEmptyMessageDelayed(0, 100);
     		return true;
     	case MENU_SETPWD:
-    		Api.alert(this, "Feature not implemented yet...");
+    		new PassDialog(this, true, new android.os.Handler.Callback() {
+				public boolean handleMessage(Message msg) {
+					if (msg.obj != null)
+						Api.alert(MainActivity.this, "Feature not implemented yet...");
+					return false;
+				}
+    		}).show();
     		return true;
     	case MENU_HELP:
     		new HelpDialog(this).show();

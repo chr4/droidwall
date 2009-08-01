@@ -25,8 +25,10 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.view.View;
 
+/**
+ * Dialog displayed when the "Help" menu option is selected
+ */
 public class HelpDialog extends AlertDialog {
-
 	protected HelpDialog(Context context) {
 		super(context);
 		final View view = getLayoutInflater().inflate(R.layout.help_dialog, null);
@@ -35,5 +37,4 @@ public class HelpDialog extends AlertDialog {
 		setTitle("Droid Wall v" + Api.VERSION);
 		setView(view);
 	}
-
 }
