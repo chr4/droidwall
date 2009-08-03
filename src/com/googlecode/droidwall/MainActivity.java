@@ -65,14 +65,6 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	private static final int MENU_SETPWD	= 4;
 	private static final int MENU_HELP		= 5;
 	
-	// Modes
-	public static final String MODE_WHITELIST = "whitelist";
-	public static final String MODE_BLACKLIST = "blacklist";
-	
-	// Interfaces
-	public static final String ITF_3G = "2G/3G";
-	public static final String ITF_WIFI = "Wi-fi";
-	
 	/** progress dialog instance */
 	private ProgressDialog progress = null;
 	/** have we alerted about incompatible apps already? */
@@ -126,11 +118,11 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     	final Editor editor = prefs.edit();
     	boolean changed = false;
     	if (prefs.getString(Api.PREF_ITFS, "").length() == 0) {
-    		editor.putString(Api.PREF_ITFS, ITF_3G);
+    		editor.putString(Api.PREF_ITFS, Api.ITF_3G);
     		changed = true;
     	}
     	if (prefs.getString(Api.PREF_MODE, "").length() == 0) {
-    		editor.putString(Api.PREF_MODE, MODE_WHITELIST);
+    		editor.putString(Api.PREF_MODE, Api.MODE_WHITELIST);
     		changed = true;
     	}
     	if (changed) editor.commit();
@@ -140,12 +132,12 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
      */
     private void refreshHeader() {
     	final SharedPreferences prefs = getSharedPreferences(Api.PREFS_NAME, 0);
-    	final String itfs = prefs.getString(Api.PREF_ITFS, ITF_3G);
-    	final String mode = prefs.getString(Api.PREF_MODE, MODE_WHITELIST);
-		this.findViewById(R.id.img_wifi).setVisibility(itfs.indexOf(ITF_WIFI) != -1 ? View.VISIBLE: View.INVISIBLE);
-		this.findViewById(R.id.img_3g).setVisibility(itfs.indexOf(ITF_3G) != -1 ? View.VISIBLE: View.INVISIBLE);
+    	final String itfs = prefs.getString(Api.PREF_ITFS, Api.ITF_3G);
+    	final String mode = prefs.getString(Api.PREF_MODE, Api.MODE_WHITELIST);
+		this.findViewById(R.id.img_wifi).setVisibility(itfs.indexOf(Api.ITF_WIFI) != -1 ? View.VISIBLE: View.INVISIBLE);
+		this.findViewById(R.id.img_3g).setVisibility(itfs.indexOf(Api.ITF_3G) != -1 ? View.VISIBLE: View.INVISIBLE);
 		final TextView labelmode = (TextView) this.findViewById(R.id.label_mode);
-		if (mode.equals(MODE_WHITELIST)) {
+		if (mode.equals(Api.MODE_WHITELIST)) {
 			labelmode.setText("Mode: White list (allow selected)");
 		} else {
 			labelmode.setText("Mode: Black list (block selected)");
@@ -157,7 +149,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     private void selectInterfaces() {
     	new AlertDialog.Builder(this).setItems(new String[]{"2G/3G Network","Wi-fi","Both"}, new DialogInterface.OnClickListener(){
 			public void onClick(DialogInterface dialog, int which) {
-				final String itfs = (which==0 ? ITF_3G : which==1 ? ITF_WIFI : ITF_3G+"|"+ITF_WIFI);
+				final String itfs = (which==0 ? Api.ITF_3G : which==1 ? Api.ITF_WIFI : Api.ITF_3G+"|"+Api.ITF_WIFI);
 				final Editor editor = getSharedPreferences(Api.PREFS_NAME, 0).edit();
 				editor.putString(Api.PREF_ITFS, itfs);
 				editor.commit();
@@ -172,7 +164,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     private void selectMode() {
     	new AlertDialog.Builder(this).setItems(new String[]{"White list (allow selected)","Black list (block selected)"}, new DialogInterface.OnClickListener(){
 			public void onClick(DialogInterface dialog, int which) {
-				final String mode = (which==0 ? MODE_WHITELIST : MODE_BLACKLIST);
+				final String mode = (which==0 ? Api.MODE_WHITELIST : Api.MODE_BLACKLIST);
 				final Editor editor = getSharedPreferences(Api.PREFS_NAME, 0).edit();
 				editor.putString(Api.PREF_MODE, mode);
 				editor.commit();

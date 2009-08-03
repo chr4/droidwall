@@ -46,11 +46,18 @@ import android.util.Log;
 public final class Api {
 	public static final String VERSION = "1.3.1";
 	
+	// Preferences
 	public static final String PREFS_NAME 		= "DroidWallPrefs";
 	public static final String PREF_ALLOWEDUIDS = "AllowedUids";
 	public static final String PREF_PASSWORD 	= "Password";
 	public static final String PREF_MODE 		= "BlockMode";
 	public static final String PREF_ITFS 		= "Interfaces";
+	// Modes
+	public static final String MODE_WHITELIST = "whitelist";
+	public static final String MODE_BLACKLIST = "blacklist";
+	// Interfaces
+	public static final String ITF_3G = "2G/3G";
+	public static final String ITF_WIFI = "Wi-fi";
 	
 	// Cached applications
 	public static DroidApp applications[] = null;
@@ -83,12 +90,12 @@ public final class Api {
 			return false;
 		}
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
-		final boolean whitelist = prefs.getString(PREF_MODE, MainActivity.MODE_WHITELIST).equals(MainActivity.MODE_WHITELIST);
-		final String itfs = prefs.getString(PREF_ITFS, MainActivity.ITF_3G);
+		final boolean whitelist = prefs.getString(PREF_MODE, MODE_WHITELIST).equals(MODE_WHITELIST);
+		final String itfs = prefs.getString(PREF_ITFS, ITF_3G);
 		String itfFilter;
 		if (itfs.indexOf("|") != -1) {
 			itfFilter = ""; // Block all interfaces
-		} else if (itfs.indexOf(MainActivity.ITF_3G) != -1) {
+		} else if (itfs.indexOf(ITF_3G) != -1) {
 			itfFilter = "-o rmnet+";; // Block all rmnet interfaces
 		} else {
 			itfFilter = "-o tiwlan+";; // Block all tiwlan interfaces

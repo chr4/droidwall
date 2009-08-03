@@ -5,8 +5,10 @@
 		<ImageView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/img_3g" android:src="@drawable/eth_3g" android:clickable="true"></ImageView>
 		<ImageView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/img_wifi" android:src="@drawable/eth_wifi" android:clickable="true"></ImageView>
 	</LinearLayout>
+	<View android:layout_width="fill_parent" android:layout_height="1px" android:background="#FFFFFFFF" />
 	<LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content" android:padding="10px">
 		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/label_mode" android:text="Mode: " android:textSize="20px" android:clickable="true"></TextView>
 	</LinearLayout>
+	<View android:layout_width="fill_parent" android:layout_height="1px" android:background="#FFFFFFFF" />
 	<ListView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/listview"></ListView>
 </LinearLayout>
