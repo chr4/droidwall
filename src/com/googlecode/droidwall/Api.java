@@ -91,14 +91,17 @@ public final class Api {
 		}
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		final boolean whitelist = prefs.getString(PREF_MODE, MODE_WHITELIST).equals(MODE_WHITELIST);
+		boolean wifi = false; // Wi-fi selected ?
 		final String itfs = prefs.getString(PREF_ITFS, ITF_3G);
 		String itfFilter;
 		if (itfs.indexOf("|") != -1) {
 			itfFilter = ""; // Block all interfaces
+			wifi = true;
 		} else if (itfs.indexOf(ITF_3G) != -1) {
 			itfFilter = "-o rmnet+";; // Block all rmnet interfaces
 		} else {
 			itfFilter = "-o tiwlan+";; // Block all tiwlan interfaces
+			wifi = true;
 		}
 		final DroidApp[] apps = getApps(ctx);
 		// Builds a pipe-separated list of uids
@@ -120,6 +123,13 @@ public final class Api {
 			int code;
 			script.append("iptables -F || exit\n");
 			final String targetRule = (whitelist ? "ACCEPT" : "REJECT");
+			if (whitelist && wifi) {
+				// When "white listing" Wi-fi, we need ensure that the dhcp and wifi users are allowed
+				int uid = android.os.Process.getUidForName("dhcp");
+				if (uid != -1) script.append("iptables -A OUTPUT " + itfFilter + " -m owner --uid-owner " + uid + " -j ACCEPT || exit\n");
+				uid = android.os.Process.getUidForName("wifi");
+				if (uid != -1) script.append("iptables -A OUTPUT " + itfFilter + " -m owner --uid-owner " + uid + " -j ACCEPT || exit\n");
+			}
 			for (DroidApp app : apps) {
 				if (app.selected) {
 					script.append("iptables -A OUTPUT " + itfFilter + " -m owner --uid-owner " + app.uid + " -j " + targetRule + " || exit\n");
