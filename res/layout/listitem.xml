@@ -6,5 +6,5 @@
     >
 
 <CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/itemcheck"></CheckBox>
-<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/itemtext" android:text="uid:packages"></TextView>
+<TextView android:layout_height="wrap_content" android:id="@+id/itemtext" android:text="uid:packages" android:layout_width="fill_parent"></TextView>
 </LinearLayout>

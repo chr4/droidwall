@@ -26,8 +26,12 @@ package com.googlecode.droidwall;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import android.app.ListActivity;
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -36,10 +40,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.CompoundButton.OnCheckedChangeListener;
@@ -50,7 +56,7 @@ import com.googlecode.droidwall.Api.DroidApp;
  * Main application activity.
  * This is the screen displayed when you open the application
  */
-public class MainActivity extends ListActivity implements OnCheckedChangeListener {
+public class MainActivity extends Activity implements OnCheckedChangeListener, OnClickListener {
 	
 	// Menu options
 	private static final int MENU_SHOWRULES	= 1;
@@ -59,22 +65,177 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
 	private static final int MENU_SETPWD	= 4;
 	private static final int MENU_HELP		= 5;
 	
+	// Modes
+	public static final String MODE_WHITELIST = "whitelist";
+	public static final String MODE_BLACKLIST = "blacklist";
+	
+	// Interfaces
+	public static final String ITF_3G = "2G/3G";
+	public static final String ITF_WIFI = "Wi-fi";
+	
 	/** progress dialog instance */
 	private ProgressDialog progress = null;
 	/** have we alerted about incompatible apps already? */
 	private boolean alerted = false;
+	private ListView listview;
 	
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        checkPreferences();
         if (savedInstanceState != null) {
         	alerted = savedInstanceState.getBoolean("alerted", false);
         }
+		setContentView(R.layout.main);
+		this.findViewById(R.id.label_interfaces).setOnClickListener(this);
+		this.findViewById(R.id.img_3g).setOnClickListener(this);
+		this.findViewById(R.id.img_wifi).setOnClickListener(this);
+		this.findViewById(R.id.label_mode).setOnClickListener(this);
     }
     @Override
     protected void onResume() {
     	super.onResume();
+    	if (this.listview == null) {
+    		this.listview = (ListView) this.findViewById(R.id.listview);
+    	}
+    	refreshHeader();
+		final String pwd = getSharedPreferences(Api.PREFS_NAME, 0).getString(Api.PREF_PASSWORD, "");
+		if (pwd.length() == 0) {
+			// No password lock
+			showOrLoadApplications();
+		} else {
+			// Check the password
+			requestPassword(pwd);
+		}
+    }
+    @Override
+    protected void onPause() {
+    	super.onPause();
+    	this.listview.setAdapter(null);
+    }
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+    	if (alerted) outState.putBoolean("alerted", true);
+    }
+    /**
+     * Check if the stored preferences are OK
+     */
+    private void checkPreferences() {
+    	final SharedPreferences prefs = getSharedPreferences(Api.PREFS_NAME, 0);
+    	final Editor editor = prefs.edit();
+    	boolean changed = false;
+    	if (prefs.getString(Api.PREF_ITFS, "").length() == 0) {
+    		editor.putString(Api.PREF_ITFS, ITF_3G);
+    		changed = true;
+    	}
+    	if (prefs.getString(Api.PREF_MODE, "").length() == 0) {
+    		editor.putString(Api.PREF_MODE, MODE_WHITELIST);
+    		changed = true;
+    	}
+    	if (changed) editor.commit();
+    }
+    /**
+     * Refresh informative header
+     */
+    private void refreshHeader() {
+    	final SharedPreferences prefs = getSharedPreferences(Api.PREFS_NAME, 0);
+    	final String itfs = prefs.getString(Api.PREF_ITFS, ITF_3G);
+    	final String mode = prefs.getString(Api.PREF_MODE, MODE_WHITELIST);
+		this.findViewById(R.id.img_wifi).setVisibility(itfs.indexOf(ITF_WIFI) != -1 ? View.VISIBLE: View.INVISIBLE);
+		this.findViewById(R.id.img_3g).setVisibility(itfs.indexOf(ITF_3G) != -1 ? View.VISIBLE: View.INVISIBLE);
+		final TextView labelmode = (TextView) this.findViewById(R.id.label_mode);
+		if (mode.equals(MODE_WHITELIST)) {
+			labelmode.setText("Mode: White list (allow selected)");
+		} else {
+			labelmode.setText("Mode: Black list (block selected)");
+		}
+    }
+    /**
+     * Displays a dialog box to select which interfaces should be blocked
+     */
+    private void selectInterfaces() {
+    	new AlertDialog.Builder(this).setItems(new String[]{"2G/3G Network","Wi-fi","Both"}, new DialogInterface.OnClickListener(){
+			public void onClick(DialogInterface dialog, int which) {
+				final String itfs = (which==0 ? ITF_3G : which==1 ? ITF_WIFI : ITF_3G+"|"+ITF_WIFI);
+				final Editor editor = getSharedPreferences(Api.PREFS_NAME, 0).edit();
+				editor.putString(Api.PREF_ITFS, itfs);
+				editor.commit();
+				refreshHeader();
+			}
+    	}).setTitle("Select interfaces:")
+    	.show();
+    }
+    /**
+     * Displays a dialog box to select the operation mode (black or white list)
+     */
+    private void selectMode() {
+    	new AlertDialog.Builder(this).setItems(new String[]{"White list (allow selected)","Black list (block selected)"}, new DialogInterface.OnClickListener(){
+			public void onClick(DialogInterface dialog, int which) {
+				final String mode = (which==0 ? MODE_WHITELIST : MODE_BLACKLIST);
+				final Editor editor = getSharedPreferences(Api.PREFS_NAME, 0).edit();
+				editor.putString(Api.PREF_MODE, mode);
+				editor.commit();
+				refreshHeader();
+			}
+    	}).setTitle("Select mode:")
+    	.show();
+    }
+    /**
+     * Check and alert for incompatible apps
+     */
+    private void checkIncompatibleApps() {
+        if (!alerted && Api.hastether != null) {
+        	Api.alert(this, "Droid Wall has detected that you have the \"" + Api.hastether + "\" application installed on your system.\n\n" +
+        		"Since this application also uses iptables, it will overwrite Droid Wall rules (and vice-versa).\n" +
+        		"Please make sure that you re-apply Droid Wall rules every time you use \"" + Api.hastether + "\".");
+        	alerted = true;
+        }
+    }
+    /**
+     * Set a new password lock
+     * @param pwd new password (empty to remove the lock)
+     */
+	private void setPassword(String pwd) {
+		final Editor editor = getSharedPreferences(Api.PREFS_NAME, 0).edit();
+		editor.putString(Api.PREF_PASSWORD, pwd);
+		String msg;
+		if (editor.commit()) {
+			if (pwd.length() > 0) {
+				msg = "Password lock defined";
+			} else {
+				msg = "Password lock removed";
+			}
+		} else {
+			msg = "Error changing password lock";
+		}
+		Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
+	}
+	/**
+	 * Request the password lock before displayed the main screen.
+	 */
+	private void requestPassword(final String pwd) {
+		new PassDialog(this, false, new android.os.Handler.Callback() {
+			public boolean handleMessage(Message msg) {
+				if (msg.obj == null) {
+					MainActivity.this.finish();
+					android.os.Process.killProcess(android.os.Process.myPid());
+					return false;
+				}
+				if (!pwd.equals(msg.obj)) {
+					requestPassword(pwd);
+					return false;
+				}
+				// Password correct
+				showOrLoadApplications();
+				return false;
+			}
+		}).show();
+	}
+	/**
+	 * If the applications are cached, just show them, otherwise load and show
+	 */
+	private void showOrLoadApplications() {
     	if (Api.applications == null) {
     		// The applications are not cached.. so lets display the progress dialog
     		progress = ProgressDialog.show(this, "Working...", "Reading installed applications", true);
@@ -94,22 +255,7 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
     		// the applications are cached, just show the list
         	showApplications();
     	}
-    }
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-    	if (alerted) outState.putBoolean("alerted", true);
-    }
-    /**
-     * Check and alert for incompatible apps
-     */
-    private void checkIncompatibleApps() {
-        if (!alerted && Api.hastether != null) {
-        	Api.alert(this, "Droid Wall has detected that you have the \"" + Api.hastether + "\" application installed on your system.\n\n" +
-        		"Since this application also uses iptables, it will overwrite Droid Wall rules (and vice-versa).\n" +
-        		"Please make sure that you re-apply Droid Wall rules every time you use \"" + Api.hastether + "\".");
-        	alerted = true;
-        }
-    }
+	}
     /**
      * Show the list of applications
      */
@@ -120,8 +266,8 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
         Arrays.sort(apps, new Comparator<DroidApp>() {
 			@Override
 			public int compare(DroidApp o1, DroidApp o2) {
-				if (o1.allowed == o2.allowed) return o1.names[0].compareTo(o2.names[0]);
-				if (o1.allowed) return -1;
+				if (o1.selected == o2.selected) return o1.names[0].compareTo(o2.names[0]);
+				if (o1.selected) return -1;
 				return 1;
 			}
         });
@@ -146,11 +292,11 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
         		entry.text.setText(app.toString());
         		final CheckBox box = entry.box;
         		box.setTag(app);
-        		box.setChecked(app.allowed);
+        		box.setChecked(app.selected);
        			return convertView;
         	}
         };
-        setListAdapter(adapter);
+        this.listview.setAdapter(adapter);
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -205,8 +351,9 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
     	case MENU_SETPWD:
     		new PassDialog(this, true, new android.os.Handler.Callback() {
 				public boolean handleMessage(Message msg) {
-					if (msg.obj != null)
-						Api.alert(MainActivity.this, "Feature not implemented yet...");
+					if (msg.obj != null) {
+						setPassword((String)msg.obj);
+					}
 					return false;
 				}
     		}).show();
@@ -224,12 +371,26 @@ public class MainActivity extends ListActivity implements OnCheckedChangeListene
 	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 		final DroidApp app = (DroidApp) buttonView.getTag();
 		if (app != null) {
-			app.allowed = isChecked;
+			app.selected = isChecked;
 		}
 	}
 	
 	private static class ListEntry {
 		private CheckBox box;
 		private TextView text;
+	}
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		case R.id.label_interfaces:
+		case R.id.img_3g:
+		case R.id.img_wifi:
+			selectInterfaces();
+			break;
+		case R.id.label_mode:
+			selectMode();
+			break;
+		}
 	}
 }

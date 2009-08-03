@@ -46,8 +46,12 @@ import android.util.Log;
 public final class Api {
 	public static final String VERSION = "1.3.1";
 	
-	public static final String PREFS_NAME = "DroidWallPrefs";
+	public static final String PREFS_NAME 		= "DroidWallPrefs";
 	public static final String PREF_ALLOWEDUIDS = "AllowedUids";
+	public static final String PREF_PASSWORD 	= "Password";
+	public static final String PREF_MODE 		= "BlockMode";
+	public static final String PREF_ITFS 		= "Interfaces";
+	
 	// Cached applications
 	public static DroidApp applications[] = null;
 	// Do we have "Wireless Tether for Root Users" installed?
@@ -79,11 +83,21 @@ public final class Api {
 			return false;
 		}
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
+		final boolean whitelist = prefs.getString(PREF_MODE, MainActivity.MODE_WHITELIST).equals(MainActivity.MODE_WHITELIST);
+		final String itfs = prefs.getString(PREF_ITFS, MainActivity.ITF_3G);
+		String itfFilter;
+		if (itfs.indexOf("|") != -1) {
+			itfFilter = ""; // Block all interfaces
+		} else if (itfs.indexOf(MainActivity.ITF_3G) != -1) {
+			itfFilter = "-o rmnet+";; // Block all rmnet interfaces
+		} else {
+			itfFilter = "-o tiwlan+";; // Block all tiwlan interfaces
+		}
 		final DroidApp[] apps = getApps(ctx);
 		// Builds a pipe-separated list of uids
 		final StringBuilder newuids = new StringBuilder();
 		for (int i=0; i<apps.length; i++) {
-			if (apps[i].allowed) {
+			if (apps[i].selected) {
 				if (newuids.length() != 0) newuids.append('|');
 				newuids.append(apps[i].username);
 			}
@@ -98,19 +112,22 @@ public final class Api {
 		try {
 			int code;
 			script.append("iptables -F || exit\n");
+			final String targetRule = (whitelist ? "ACCEPT" : "REJECT");
 			for (DroidApp app : apps) {
-				if (app.allowed) {
-					script.append("iptables -A OUTPUT -o rmnet+ -m owner --uid-owner " + app.uid + " -j ACCEPT || exit\n");
+				if (app.selected) {
+					script.append("iptables -A OUTPUT " + itfFilter + " -m owner --uid-owner " + app.uid + " -j " + targetRule + " || exit\n");
 				}
 			}
-			script.append("iptables -A OUTPUT -o rmnet+ -j REJECT || exit\n");
+			if (whitelist) {
+				script.append("iptables -A OUTPUT " + itfFilter + " -j REJECT || exit\n");
+			}
 	    	StringBuilder res = new StringBuilder();
 			code = runScriptAsRoot(script.toString(), res);
 			if (showErrors && code != 0) {
 				String msg = res.toString();
 				Log.e("DroidWall", msg);
 				// Search for common error messages
-				if (msg.indexOf("Couldn't find match `owner'") != -1) {
+				if (msg.indexOf("Couldn't find match `owner'") != -1 || msg.indexOf("no chain/target match") != -1) {
 					alert(ctx, "Error applying iptables rules.\nExit code: " + code + "\n\n" +
 						"It seems your Linux kernel was not compiled with the netfilter \"owner\" module enabled, which is required for Droid Wall to work properly.\n\n" +
 						"You should check if there is an updated version of your Android ROM compiled with this kernel module.");
@@ -216,8 +233,8 @@ public final class Api {
 					app.names = newnames;
 				}
 				// check if this application is allowed
-				if (!app.allowed && Arrays.binarySearch(allowed, app.username) >= 0) {
-					app.allowed = true;
+				if (!app.selected && Arrays.binarySearch(allowed, app.username) >= 0) {
+					app.selected = true;
 				}
 			}
 			applications = new DroidApp[map.size()];
@@ -238,7 +255,7 @@ public final class Api {
 		if (hasroot) return true;
 		try {
 			// Run an empty script just to check root access
-			if (runScriptAsRoot("", null) == 0) {
+			if (runScriptAsRoot("", null, 10000) == 0) {
 				hasroot = true;
 				return true;
 			}
@@ -254,46 +271,39 @@ public final class Api {
      * 
      * @param script the script to be executed
      * @param res the script output response (stdout + stderr)
+     * @param timeout timeout in milliseconds (-1 for none)
+     * @return the script exit code
+     */
+	public static int runScriptAsRoot(String script, StringBuilder res, final long timeout) {
+		final ScriptRunner runner = new ScriptRunner(script, res);
+		runner.start();
+		try {
+			if (timeout > 0) {
+				runner.join(timeout);
+			} else {
+				runner.join();
+			}
+			if (runner.isAlive()) {
+				// Timed-out
+				runner.interrupt();
+				runner.destroy();
+				runner.join(50);
+			}
+		} catch (InterruptedException ex) {}
+		return runner.exitcode;
+    }
+    /**
+     * Runs a script as root (multiple commands separated by "\n") with a default timeout of 5 seconds.
+     * 
+     * @param script the script to be executed
+     * @param res the script output response (stdout + stderr)
+     * @param timeout timeout in milliseconds (-1 for none)
      * @return the script exit code
      * @throws IOException on any error executing the script, or writing it to disk
-     * @throws InterruptedException if the thread is interrupted
      */
-	public static int runScriptAsRoot(String script, StringBuilder res) throws IOException, InterruptedException {
-		// Create the "su" request to run the command
-		// note that this will create a shell that we must interact to (using stdin/stdout)
-		final Process exec = Runtime.getRuntime().exec("su");
-		try {
-			// I found that on some rare situations, the su shell will not receive the commands
-			// so we must wait for it the become "ready".
-			Thread.sleep(100);
-			final OutputStreamWriter out = new OutputStreamWriter(exec.getOutputStream());
-			// Write the script to be executed
-			out.write(script);
-			// Ensure that the last character is an "enter"
-			if (!script.endsWith("\n")) out.write("\n");
-			out.flush();
-			// Terminate the "su" process
-			out.write("exit\n");
-			out.flush();
-			final char buf[] = new char[1024];
-			// Consume the "stdout"
-			InputStreamReader r = new InputStreamReader(exec.getInputStream());
-			int read=0;
-			while ((read=r.read(buf)) != -1) {
-				if (res != null) res.append(buf, 0, read);
-			}
-			// Consume the "stderr"
-			r = new InputStreamReader(exec.getErrorStream());
-			read=0;
-			while ((read=r.read(buf)) != -1) {
-				if (res != null) res.append(buf, 0, read);
-			}
-			// return the process exit code
-			return exec.waitFor();
-		} finally {
-			exec.destroy();
-		}
-    }
+	public static int runScriptAsRoot(String script, StringBuilder res) throws IOException {
+		return runScriptAsRoot(script, res, 5000);
+	}
 
     /**
      * Small structure to hold an application info
@@ -301,12 +311,12 @@ public final class Api {
 	public static final class DroidApp {
 		/** linux user id */
     	int uid;
-    	/** application user name (android actually uses a package name to identify) */
+    	/** application user name (Android actually uses a package name to identify) */
     	String username;
     	/** application names belonging to this user id */
     	String names[];
-    	/** indicates if this application is allowed to access data */
-    	boolean allowed;
+    	/** indicates if this application is selected (checked) */
+    	boolean selected;
     	/** toString cache */
     	String tostr;
     	
@@ -326,4 +336,68 @@ public final class Api {
     		return tostr;
     	}
     }
+	/**
+	 * Internal thread used to execute scripts as root.
+	 */
+	private static final class ScriptRunner extends Thread {
+		private final String script;
+		private final StringBuilder res;
+		public int exitcode = -1;
+		private Process exec;
+		
+		/**
+		 * Creates a new script runner.
+		 * @param script script to run
+		 * @param res response output
+		 */
+		public ScriptRunner(String script, StringBuilder res) {
+			this.script = script;
+			this.res = res;
+		}
+		@Override
+		public void run() {
+			try {
+				// Create the "su" request to run the command
+				// note that this will create a shell that we must interact to (using stdin/stdout)
+				exec = Runtime.getRuntime().exec("su");
+				final OutputStreamWriter out = new OutputStreamWriter(exec.getOutputStream());
+				// Write the script to be executed
+				out.write(script);
+				// Ensure that the last character is an "enter"
+				if (!script.endsWith("\n")) out.write("\n");
+				out.flush();
+				// Terminate the "su" process
+				out.write("exit\n");
+				out.flush();
+				final char buf[] = new char[1024];
+				// Consume the "stdout"
+				InputStreamReader r = new InputStreamReader(exec.getInputStream());
+				int read=0;
+				while ((read=r.read(buf)) != -1) {
+					if (res != null) res.append(buf, 0, read);
+				}
+				// Consume the "stderr"
+				r = new InputStreamReader(exec.getErrorStream());
+				read=0;
+				while ((read=r.read(buf)) != -1) {
+					if (res != null) res.append(buf, 0, read);
+				}
+				// get the process exit code
+				if (exec != null) this.exitcode = exec.waitFor();
+			} catch (InterruptedException ex) {
+				if (res != null) res.append("\nOperation timed-out");
+			} catch (Exception ex) {
+				if (res != null) res.append("\n" + ex);
+			} finally {
+				destroy();
+			}
+		}
+		/**
+		 * Destroy this script runner
+		 */
+		public synchronized void destroy() {
+			if (exec != null) exec.destroy();
+			exec = null;
+		}
+	}
 }

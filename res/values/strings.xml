@@ -10,7 +10,7 @@
     <string name="pass_titleset">Set password lock</string>
     <string name="pass_titleget">Password required</string>
     <string name="enterpass">Enter the password:</string>
-    <string name="enternewpass">Enter the new password (set to blank to remove the password):</string>
+    <string name="enternewpass">Enter the new password (leave blank to remove):</string>
 	<string name="help_dialog_text"><i>Author: Rodrigo Zechin Rosauro</i>
 		\n<i><a href="http://droidwall.googlecode.com">http://droidwall.googlecode.com</a></i>
 		\n
