@@ -272,7 +272,7 @@ public final class Api {
 		if (hasroot) return true;
 		try {
 			// Run an empty script just to check root access
-			if (runScriptAsRoot("", null, 10000) == 0) {
+			if (runScriptAsRoot("", null, 15000) == 0) {
 				hasroot = true;
 				return true;
 			}
