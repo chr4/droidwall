@@ -44,7 +44,7 @@ import android.util.Log;
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
-	public static final String VERSION = "1.3.2";
+	public static final String VERSION = "1.3.3";
 	
 	// Preferences
 	public static final String PREFS_NAME 		= "DroidWallPrefs";
@@ -272,7 +272,7 @@ public final class Api {
 		if (hasroot) return true;
 		try {
 			// Run an empty script just to check root access
-			if (runScriptAsRoot("", null, 15000) == 0) {
+			if (runScriptAsRoot("exit 0", null, 20000) == 0) {
 				hasroot = true;
 				return true;
 			}
@@ -319,7 +319,7 @@ public final class Api {
      * @throws IOException on any error executing the script, or writing it to disk
      */
 	public static int runScriptAsRoot(String script, StringBuilder res) throws IOException {
-		return runScriptAsRoot(script, res, 5000);
+		return runScriptAsRoot(script, res, 15000);
 	}
 
     /**
