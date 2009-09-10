@@ -44,7 +44,7 @@ import android.util.Log;
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
-	public static final String VERSION = "1.3.4";
+	public static final String VERSION = "1.3.5";
 	
 	// Preferences
 	public static final String PREFS_NAME 		= "DroidWallPrefs";
@@ -254,18 +254,20 @@ public final class Api {
 					app.selected = true;
 				}
 			}
-			/* add the ROOT user to the list */
-			final int rootuid = android.os.Process.getUidForName("root");
-			if (!map.containsKey(rootuid)) {
-				app = new DroidApp();
-				app.uid = rootuid;
-				app.username = "root";
-				app.names = new String[] { "(Applications running as root)" };
-				// check if this application is allowed
-				if (Arrays.binarySearch(allowed, app.username) >= 0) {
-					app.selected = true;
+			/* add special applications to the list */
+			final DroidApp special[] = {
+				new DroidApp(android.os.Process.getUidForName("root"), "root", "(Applications running as root)", false),
+				new DroidApp(android.os.Process.getUidForName("media"), "media", "Media server", false),
+			};
+			for (int i=0; i<special.length; i++) {
+				app = special[i];
+				if (app.uid != -1 && !map.containsKey(app.uid)) {
+					// check if this application is allowed
+					if (Arrays.binarySearch(allowed, app.username) >= 0) {
+						app.selected = true;
+					}
+					map.put(app.uid, app);
 				}
-				map.put(rootuid, app);
 			}
 			applications = new DroidApp[map.size()];
 			int index = 0;
@@ -350,6 +352,14 @@ public final class Api {
     	/** toString cache */
     	String tostr;
     	
+    	public DroidApp() {
+    	}
+    	public DroidApp(int uid, String username, String name, boolean selected) {
+    		this.uid = uid;
+    		this.username = username;
+    		this.names = new String[] {name};
+    		this.selected = selected;
+    	}
     	/**
     	 * Screen representation of this application
     	 */
