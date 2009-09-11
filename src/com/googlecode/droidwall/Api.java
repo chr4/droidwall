@@ -28,6 +28,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
 
@@ -44,7 +45,7 @@ import android.util.Log;
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
-	public static final String VERSION = "1.3.5";
+	public static final String VERSION = "1.3.6";
 	
 	// Preferences
 	public static final String PREFS_NAME 		= "DroidWallPrefs";
@@ -81,11 +82,12 @@ public final class Api {
     }
     
     /**
-     * Purge and re-add all rules.
+     * Purge and re-add all rules (internal implementation).
      * @param ctx application context (mandatory)
+     * @param uids list of selected uids to allow or disallow (depending on the working mode)
      * @param showErrors indicates if errors should be alerted
      */
-	public static boolean applyIptablesRules(Context ctx, boolean showErrors) {
+	private static boolean applyIptablesRulesImpl(Context ctx, List<Integer> uids, boolean showErrors) {
 		if (ctx == null) {
 			return false;
 		}
@@ -103,21 +105,6 @@ public final class Api {
 			itfFilter = "-o tiwlan+";; // Block all tiwlan interfaces
 			wifi = true;
 		}
-		final DroidApp[] apps = getApps(ctx);
-		// Builds a pipe-separated list of uids
-		final StringBuilder newuids = new StringBuilder();
-		for (int i=0; i<apps.length; i++) {
-			if (apps[i].selected) {
-				if (newuids.length() != 0) newuids.append('|');
-				newuids.append(apps[i].username);
-			}
-		}
-		// save the new list of uids if necessary
-		if (!newuids.toString().equals(prefs.getString(PREF_ALLOWEDUIDS, ""))) {
-			Editor edit = prefs.edit();
-			edit.putString(PREF_ALLOWEDUIDS, newuids.toString());
-			edit.commit();
-		}
     	final StringBuilder script = new StringBuilder();
 		try {
 			int code;
@@ -130,10 +117,8 @@ public final class Api {
 				uid = android.os.Process.getUidForName("wifi");
 				if (uid != -1) script.append("iptables -A OUTPUT " + itfFilter + " -m owner --uid-owner " + uid + " -j ACCEPT || exit\n");
 			}
-			for (DroidApp app : apps) {
-				if (app.selected) {
-					script.append("iptables -A OUTPUT " + itfFilter + " -m owner --uid-owner " + app.uid + " -j " + targetRule + " || exit\n");
-				}
+			for (Integer uid : uids) {
+				script.append("iptables -A OUTPUT " + itfFilter + " -m owner --uid-owner " + uid + " -j " + targetRule + " || exit\n");
 			}
 			if (whitelist) {
 				script.append("iptables -A OUTPUT " + itfFilter + " -j REJECT || exit\n");
@@ -163,6 +148,56 @@ public final class Api {
 			if (showErrors) alert(ctx, "error refreshing iptables: " + e);
 		}
 		return false;
+    }
+    /**
+     * Purge and re-add all saved rules (not in-memory ones).
+     * This is much faster than just calling "applyIptablesRules", since it don't need to read installed applications.
+     * @param ctx application context (mandatory)
+     * @param showErrors indicates if errors should be alerted
+     */
+	public static boolean applySavedIptablesRules(Context ctx, boolean showErrors) {
+		if (ctx == null) {
+			return false;
+		}
+		final String savedNames = ctx.getSharedPreferences(PREFS_NAME, 0).getString(PREF_ALLOWEDUIDS, "");
+		List<Integer> uids = new LinkedList<Integer>();
+		if (savedNames.length() > 0) {
+			// Check which applications are allowed
+			final StringTokenizer tok = new StringTokenizer(savedNames, "|");
+			while (tok.hasMoreTokens()) {
+				uids.add(android.os.Process.getUidForName(tok.nextToken()));
+			}
+		}
+		return applyIptablesRulesImpl(ctx, uids, showErrors);
+	}
+    /**
+     * Purge and re-add all rules.
+     * @param ctx application context (mandatory)
+     * @param showErrors indicates if errors should be alerted
+     */
+	public static boolean applyIptablesRules(Context ctx, boolean showErrors) {
+		if (ctx == null) {
+			return false;
+		}
+		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
+		List<Integer> uidsToApply = new LinkedList<Integer>();
+		final DroidApp[] apps = getApps(ctx);
+		// Builds a pipe-separated list of names
+		final StringBuilder newnames = new StringBuilder();
+		for (int i=0; i<apps.length; i++) {
+			if (apps[i].selected) {
+				if (newnames.length() != 0) newnames.append('|');
+				newnames.append(apps[i].username);
+				uidsToApply.add(apps[i].uid);
+			}
+		}
+		// save the new list of names if necessary
+		if (!newnames.toString().equals(prefs.getString(PREF_ALLOWEDUIDS, ""))) {
+			Editor edit = prefs.edit();
+			edit.putString(PREF_ALLOWEDUIDS, newnames.toString());
+			edit.commit();
+		}
+		return applyIptablesRulesImpl(ctx, uidsToApply, showErrors);
     }
     
     /**

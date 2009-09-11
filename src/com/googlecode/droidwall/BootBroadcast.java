@@ -27,15 +27,15 @@ import android.content.Context;
 import android.content.Intent;
 
 /**
- * Broadcast receiver that set iptable rules on system startup.
- * This is necessary because the iptables rules are not persistent.
+ * Broadcast receiver that set iptables rules on system startup.
+ * This is necessary because the rules are not persistent.
  */
 public class BootBroadcast extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-			Api.applyIptablesRules(context, false);
+			Api.applySavedIptablesRules(context, false);
 		}
 	}
 
