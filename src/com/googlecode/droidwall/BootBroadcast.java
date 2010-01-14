@@ -35,7 +35,9 @@ public class BootBroadcast extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-			Api.applySavedIptablesRules(context, false);
+			if (Api.isEnabled(context)) {
+				Api.applySavedIptablesRules(context, false);
+			}
 		}
 	}
 

@@ -59,11 +59,11 @@ import com.googlecode.droidwall.Api.DroidApp;
 public class MainActivity extends Activity implements OnCheckedChangeListener, OnClickListener {
 	
 	// Menu options
+	private static final int MENU_DISABLE	= 0;
 	private static final int MENU_SHOWRULES	= 1;
 	private static final int MENU_APPLY		= 2;
-	private static final int MENU_PURGE		= 3;
-	private static final int MENU_SETPWD	= 4;
-	private static final int MENU_HELP		= 5;
+	private static final int MENU_SETPWD	= 3;
+	private static final int MENU_HELP		= 4;
 	
 	/** progress dialog instance */
 	private ProgressDialog progress = null;
@@ -142,6 +142,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		} else {
 			labelmode.setText("Mode: Black list (block selected)");
 		}
+		setTitle(Api.isEnabled(this) ? R.string.title_enabled : R.string.title_disabled);
     }
     /**
      * Displays a dialog box to select which interfaces should be blocked
@@ -292,63 +293,39 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+    	menu.add(0, MENU_DISABLE, 0, R.string.disable_fw).setIcon(android.R.drawable.button_onoff_indicator_off);
     	menu.add(0, MENU_SHOWRULES, 0, R.string.showrules).setIcon(R.drawable.show);
     	menu.add(0, MENU_APPLY, 0, R.string.applyrules).setIcon(R.drawable.apply);
-    	menu.add(0, MENU_PURGE, 0, R.string.purgerules).setIcon(R.drawable.purge);
-    	menu.add(0, MENU_SETPWD, 0, R.string.setpwd).setIcon(R.drawable.lock);
+    	menu.add(0, MENU_SETPWD, 0, R.string.setpwd).setIcon(android.R.drawable.ic_lock_lock);
     	menu.add(0, MENU_HELP, 0, R.string.help).setIcon(android.R.drawable.ic_menu_help);
     	return true;
     }
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+    	final MenuItem item = menu.getItem(MENU_DISABLE);
+    	if (Api.isEnabled(this)) {
+    		item.setIcon(android.R.drawable.button_onoff_indicator_off);
+    		item.setTitle(R.string.disable_fw);
+    	} else {
+    		item.setIcon(android.R.drawable.button_onoff_indicator_on);
+    		item.setTitle(R.string.enable_fw);
+    	}
+    	return super.onPrepareOptionsMenu(menu);
+    }
+    @Override
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
-    	final Handler handler;
     	switch (item.getItemId()) {
+    	case MENU_DISABLE:
+    		disableOrEnable();
+    		return true;
     	case MENU_SHOWRULES:
-    		progress = ProgressDialog.show(this, "Working...", "Please wait", true);
-        	handler = new Handler() {
-        		public void handleMessage(Message msg) {
-        			if (progress != null) progress.dismiss();
-        			if (!Api.hasRootAccess(MainActivity.this)) return;
-           			Api.showIptablesRules(MainActivity.this);
-        		}
-        	};
-			handler.sendEmptyMessageDelayed(0, 100);
+    		showRules();
     		return true;
     	case MENU_APPLY:
-    		progress = ProgressDialog.show(this, "Working...", "Applying iptables rules.", true);
-        	handler = new Handler() {
-        		public void handleMessage(Message msg) {
-        			if (progress != null) progress.dismiss();
-        			if (!Api.hasRootAccess(MainActivity.this)) return;
-        			if (Api.applyIptablesRules(MainActivity.this, true)) {
-        				Toast.makeText(MainActivity.this, "Rules applied with success", Toast.LENGTH_SHORT).show();
-        			}
-        		}
-        	};
-			handler.sendEmptyMessageDelayed(0, 100);
-    		return true;
-    	case MENU_PURGE:
-    		progress = ProgressDialog.show(this, "Working...", "Deleting iptables rules.", true);
-        	handler = new Handler() {
-        		public void handleMessage(Message msg) {
-        			if (progress != null) progress.dismiss();
-        			if (!Api.hasRootAccess(MainActivity.this)) return;
-        			if (Api.purgeIptables(MainActivity.this)) {
-        				Toast.makeText(MainActivity.this, "Rules purged with success", Toast.LENGTH_SHORT).show();
-        			}
-        		}
-        	};
-			handler.sendEmptyMessageDelayed(0, 100);
+    		applyRules();
     		return true;
     	case MENU_SETPWD:
-    		new PassDialog(this, true, new android.os.Handler.Callback() {
-				public boolean handleMessage(Message msg) {
-					if (msg.obj != null) {
-						setPassword((String)msg.obj);
-					}
-					return false;
-				}
-    		}).show();
+    		setPassword();
     		return true;
     	case MENU_HELP:
     		new HelpDialog(this).show();
@@ -356,6 +333,82 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     	}
     	return false;
     }
+    /**
+     * Enables or disables the firewall
+     */
+	private void disableOrEnable() {
+		final boolean enabled = !Api.isEnabled(this);
+		Api.setEnabled(this, enabled);
+		if (enabled) {
+			applyRules();
+			setTitle(R.string.title_enabled);
+		} else {
+			purgeRules();
+			setTitle(R.string.title_disabled);
+		}
+	}
+	/**
+	 * Set a new lock password
+	 */
+	private void setPassword() {
+		new PassDialog(this, true, new android.os.Handler.Callback() {
+			public boolean handleMessage(Message msg) {
+				if (msg.obj != null) {
+					setPassword((String)msg.obj);
+				}
+				return false;
+			}
+		}).show();
+	}
+	/**
+	 * Show iptable rules on a dialog
+	 */
+	private void showRules() {
+		final Handler handler;
+		progress = ProgressDialog.show(this, "Working...", "Please wait", true);
+		handler = new Handler() {
+			public void handleMessage(Message msg) {
+				if (progress != null) progress.dismiss();
+				if (!Api.hasRootAccess(MainActivity.this)) return;
+				Api.showIptablesRules(MainActivity.this);
+			}
+		};
+		handler.sendEmptyMessageDelayed(0, 100);
+	}
+	/**
+	 * Apply iptable rules, showing a visual indication
+	 */
+	private void applyRules() {
+		final Handler handler;
+		progress = ProgressDialog.show(this, "Working...", "Applying iptables rules.", true);
+		handler = new Handler() {
+			public void handleMessage(Message msg) {
+				if (progress != null) progress.dismiss();
+				if (!Api.hasRootAccess(MainActivity.this)) return;
+				if (Api.applyIptablesRules(MainActivity.this, true)) {
+					Toast.makeText(MainActivity.this, "Rules applied with success", Toast.LENGTH_SHORT).show();
+				}
+			}
+		};
+		handler.sendEmptyMessageDelayed(0, 100);
+	}
+	/**
+	 * Purge iptable rules, showing a visual indication
+	 */
+	private void purgeRules() {
+		final Handler handler;
+		progress = ProgressDialog.show(this, "Working...", "Deleting iptables rules.", true);
+		handler = new Handler() {
+			public void handleMessage(Message msg) {
+				if (progress != null) progress.dismiss();
+				if (!Api.hasRootAccess(MainActivity.this)) return;
+				if (Api.purgeIptables(MainActivity.this)) {
+					Toast.makeText(MainActivity.this, "Rules purged with success", Toast.LENGTH_SHORT).show();
+				}
+			}
+		};
+		handler.sendEmptyMessageDelayed(0, 100);
+	}
 	/**
 	 * Called an application is check/unchecked
 	 */

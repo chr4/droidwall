@@ -53,6 +53,7 @@ public final class Api {
 	public static final String PREF_PASSWORD 	= "Password";
 	public static final String PREF_MODE 		= "BlockMode";
 	public static final String PREF_ITFS 		= "Interfaces";
+	public static final String PREF_ENABLED		= "Enabled";
 	// Modes
 	public static final String MODE_WHITELIST = "whitelist";
 	public static final String MODE_BLACKLIST = "blacklist";
@@ -370,6 +371,22 @@ public final class Api {
      */
 	public static int runScriptAsRoot(String script, StringBuilder res) throws IOException {
 		return runScriptAsRoot(script, res, 15000);
+	}
+
+	public static boolean isEnabled(Context ctx) {
+		if (ctx == null) return false;
+		return ctx.getSharedPreferences(PREFS_NAME, 0).getBoolean(PREF_ENABLED, true);
+	}
+	
+	public static void setEnabled(Context ctx, boolean enabled) {
+		if (ctx == null) return;
+		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
+		if (prefs.getBoolean(PREF_ENABLED, true) == enabled) {
+			return;
+		}
+		final Editor edit = prefs.edit();
+		edit.putBoolean(PREF_ENABLED, enabled);
+		edit.commit();
 	}
 
     /**

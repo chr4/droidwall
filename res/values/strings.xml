@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Droid Wall</string>
+    <string name="title_enabled">Droid Wall</string>
+    <string name="title_disabled">Droid Wall (Firewall disabled)</string>
     <string name="showrules">Show rules</string>
     <string name="applyrules">Apply rules</string>
     <string name="purgerules">Purge rules</string>
     <string name="setpwd">Set password</string>
     <string name="help">Help</string>
     <string name="close">Close</string>
+    <string name="enable_fw">Enable Firewall</string>
+    <string name="disable_fw">Disable Firewall</string>
     <string name="pass_titleset">Set password lock</string>
     <string name="pass_titleget">Password required</string>
     <string name="enterpass">Enter the password:</string>
@@ -27,7 +31,8 @@
 		\n<b>Other features:</b>
 		\nClick on <b>Show rules</b> menu to display current iptables rules output.
 		\n
-		\nClick on <b>Purge rules</b> menu to remove any iptables rules TEMPORARILY (until the next <b>Apply rules</b> or reboot).
+		\nClick on <b>Disable Firewall</b> menu to completely disable the Firewall.
+		You must manually enable the Firewall later by clicking on <b>Enable Firewall</b>.
 		\n
 		\n<b>Password lock:</b>
 		\nYou can set a password lock for Droid Wall by using the <b>Set password</b> menu option.
