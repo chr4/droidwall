@@ -32,6 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -45,7 +46,7 @@ import android.util.Log;
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
-	public static final String VERSION = "1.3.6";
+	public static final String VERSION = "1.3.7";
 	
 	// Preferences
 	public static final String PREFS_NAME 		= "DroidWallPrefs";
@@ -245,8 +246,9 @@ public final class Api {
 			return applications;
 		}
 		hastether = null;
+		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		// allowed application names separated by pipe '|' (persisted)
-		final String savedNames = ctx.getSharedPreferences(PREFS_NAME, 0).getString(PREF_ALLOWEDUIDS, "");
+		final String savedNames = prefs.getString(PREF_ALLOWEDUIDS, "");
 		String allowed[];
 		if (savedNames.length() > 0) {
 			// Check which applications are allowed
@@ -268,6 +270,10 @@ public final class Api {
 			DroidApp app;
 			for (final ApplicationInfo apinfo : installed) {
 				app = map.get(apinfo.uid);
+				// filter applications which are not allowed to access the Internet
+				if (app == null && PackageManager.PERMISSION_GRANTED != pkgmanager.checkPermission(Manifest.permission.INTERNET, apinfo.packageName)) {
+					continue;
+				}
 				name = pkgmanager.getApplicationLabel(apinfo).toString();
 				// Check for the tethering application (which causes conflicts with Droid Wall)
 				if (apinfo.packageName.equals("android.tether")) {
