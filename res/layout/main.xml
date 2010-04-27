@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical" android:duplicateParentState="false">
-	<LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content" android:padding="10px">
-		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/label_interfaces" android:text="Network interfaces: " android:textSize="20px" android:paddingRight="10px" android:clickable="true"></TextView>
-		<ImageView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/img_3g" android:src="@drawable/eth_3g" android:clickable="true"></ImageView>
-		<ImageView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/img_wifi" android:src="@drawable/eth_wifi" android:clickable="true"></ImageView>
-	</LinearLayout>
 	<View android:layout_width="fill_parent" android:layout_height="1px" android:background="#FFFFFFFF" />
 	<LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content" android:padding="10px">
 		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/label_mode" android:text="Mode: " android:textSize="20px" android:clickable="true"></TextView>
 	</LinearLayout>
 	<View android:layout_width="fill_parent" android:layout_height="1px" android:background="#FFFFFFFF" />
+	<LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content" android:padding="10px">
+		<ImageView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/img_wifi" android:src="@drawable/eth_wifi" android:clickable="false"></ImageView>
+		<TextView android:layout_width="5px" android:layout_height="wrap_content" android:id="@+id/img_spacer" android:text="" android:textSize="20px" android:clickable="false"></TextView>
+		<ImageView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/img_3g" android:src="@drawable/eth_3g" android:clickable="false"></ImageView>
+	</LinearLayout>
 	<ListView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/listview"></ListView>
 </LinearLayout>

@@ -22,10 +22,9 @@
 		It allows you to restrict which applications are permitted to access your data networks.
 		\nThis is the perfect solution if you don't have an unlimited data plan, or just wants to see your battery lasting longer.
 		\n<b>Using Droid Wall:</b>
-		\n<b>1.</b> Click on <b>Network Interfaces</b> to select which interfaces should be blocked.
-		\n<b>2.</b> Click on <b>Mode</b> to switch between <i>White List</i> and <i>Black List</i> modes.
-		\n<b>3.</b> Mark the applications that you want to block or allow (depending on the selected mode).
-		\n<b>4.</b> Open the menu and click on <b>Apply rules</b> to modify your iptables rules.
+		\n<b>1.</b> Click on <b>Mode</b> to switch between <i>White List</i> and <i>Black List</i> modes.
+		\n<b>2.</b> Mark the applications that you want to block or allow (depending on the selected mode), for each interface.
+		\n<b>3.</b> Open the menu and click on <b>Apply rules</b> to modify your iptables rules.
 		\n<b>Note:</b> After applying the rules, they will be saved and automatically restored every-time you restart your phone.
 		\n
 		\n<b>Other features:</b>

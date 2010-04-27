@@ -80,9 +80,6 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
         	alerted = savedInstanceState.getBoolean("alerted", false);
         }
 		setContentView(R.layout.main);
-		this.findViewById(R.id.label_interfaces).setOnClickListener(this);
-		this.findViewById(R.id.img_3g).setOnClickListener(this);
-		this.findViewById(R.id.img_wifi).setOnClickListener(this);
 		this.findViewById(R.id.label_mode).setOnClickListener(this);
     }
     @Override
@@ -117,12 +114,22 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     	final SharedPreferences prefs = getSharedPreferences(Api.PREFS_NAME, 0);
     	final Editor editor = prefs.edit();
     	boolean changed = false;
-    	if (prefs.getString(Api.PREF_ITFS, "").length() == 0) {
-    		editor.putString(Api.PREF_ITFS, Api.ITF_3G);
-    		changed = true;
-    	}
     	if (prefs.getString(Api.PREF_MODE, "").length() == 0) {
     		editor.putString(Api.PREF_MODE, Api.MODE_WHITELIST);
+    		changed = true;
+    	}
+    	/* migrate the old preference name */
+    	if (prefs.getString("AllowedUids", "").length() > 0) {
+    		final String uids = prefs.getString("AllowedUids", "");
+    		final String itfs = prefs.getString("Interfaces", "3G");
+    		if (itfs.indexOf("3G") != -1) {
+        		editor.putString(Api.PREF_3G_UIDS, uids);
+    		}
+    		if (itfs.indexOf("Wi-fi") != -1) {
+        		editor.putString(Api.PREF_WIFI_UIDS, uids);
+    		}
+    		editor.remove("AllowedUids");
+    		editor.remove("Interfaces");
     		changed = true;
     	}
     	if (changed) editor.commit();
@@ -132,10 +139,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
      */
     private void refreshHeader() {
     	final SharedPreferences prefs = getSharedPreferences(Api.PREFS_NAME, 0);
-    	final String itfs = prefs.getString(Api.PREF_ITFS, Api.ITF_3G);
     	final String mode = prefs.getString(Api.PREF_MODE, Api.MODE_WHITELIST);
-		this.findViewById(R.id.img_wifi).setVisibility(itfs.indexOf(Api.ITF_WIFI) != -1 ? View.VISIBLE: View.INVISIBLE);
-		this.findViewById(R.id.img_3g).setVisibility(itfs.indexOf(Api.ITF_3G) != -1 ? View.VISIBLE: View.INVISIBLE);
 		final TextView labelmode = (TextView) this.findViewById(R.id.label_mode);
 		if (mode.equals(Api.MODE_WHITELIST)) {
 			labelmode.setText("Mode: White list (allow selected)");
@@ -143,21 +147,6 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 			labelmode.setText("Mode: Black list (block selected)");
 		}
 		setTitle(Api.isEnabled(this) ? R.string.title_enabled : R.string.title_disabled);
-    }
-    /**
-     * Displays a dialog box to select which interfaces should be blocked
-     */
-    private void selectInterfaces() {
-    	new AlertDialog.Builder(this).setItems(new String[]{"2G/3G Network","Wi-fi","Both"}, new DialogInterface.OnClickListener(){
-			public void onClick(DialogInterface dialog, int which) {
-				final String itfs = (which==0 ? Api.ITF_3G : which==1 ? Api.ITF_WIFI : Api.ITF_3G+"|"+Api.ITF_WIFI);
-				final Editor editor = getSharedPreferences(Api.PREFS_NAME, 0).edit();
-				editor.putString(Api.PREF_ITFS, itfs);
-				editor.commit();
-				refreshHeader();
-			}
-    	}).setTitle("Select interfaces:")
-    	.show();
     }
     /**
      * Displays a dialog box to select the operation mode (black or white list)
@@ -259,8 +248,10 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
         Arrays.sort(apps, new Comparator<DroidApp>() {
 			@Override
 			public int compare(DroidApp o1, DroidApp o2) {
-				if (o1.selected == o2.selected) return o1.names[0].compareTo(o2.names[0]);
-				if (o1.selected) return -1;
+				if ((o1.selected_wifi|o1.selected_3g) == (o2.selected_wifi|o2.selected_3g)) {
+					return o1.names[0].compareTo(o2.names[0]);
+				}
+				if (o1.selected_wifi || o1.selected_3g) return -1;
 				return 1;
 			}
         });
@@ -273,19 +264,24 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
         			// Inflate a new view
         			convertView = inflater.inflate(R.layout.listitem, parent, false);
        				entry = new ListEntry();
-       				entry.box = (CheckBox) convertView.findViewById(R.id.itemcheck);
+       				entry.box_wifi = (CheckBox) convertView.findViewById(R.id.itemcheck_wifi);
+       				entry.box_3g = (CheckBox) convertView.findViewById(R.id.itemcheck_3g);
        				entry.text = (TextView) convertView.findViewById(R.id.itemtext);
        				convertView.setTag(entry);
-       				entry.box.setOnCheckedChangeListener(MainActivity.this);
+       				entry.box_wifi.setOnCheckedChangeListener(MainActivity.this);
+       				entry.box_3g.setOnCheckedChangeListener(MainActivity.this);
         		} else {
         			// Convert an existing view
         			entry = (ListEntry) convertView.getTag();
         		}
         		final DroidApp app = apps[position];
         		entry.text.setText(app.toString());
-        		final CheckBox box = entry.box;
-        		box.setTag(app);
-        		box.setChecked(app.selected);
+        		final CheckBox box_wifi = entry.box_wifi;
+        		box_wifi.setTag(app);
+        		box_wifi.setChecked(app.selected_wifi);
+        		final CheckBox box_3g = entry.box_3g;
+        		box_3g.setTag(app);
+        		box_3g.setChecked(app.selected_3g);
        			return convertView;
         	}
         };
@@ -416,23 +412,22 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 		final DroidApp app = (DroidApp) buttonView.getTag();
 		if (app != null) {
-			app.selected = isChecked;
+			switch (buttonView.getId()) {
+				case R.id.itemcheck_wifi: app.selected_wifi = isChecked; break;
+				case R.id.itemcheck_3g: app.selected_3g = isChecked; break;
+			}
 		}
 	}
 	
 	private static class ListEntry {
-		private CheckBox box;
+		private CheckBox box_wifi;
+		private CheckBox box_3g;
 		private TextView text;
 	}
 
 	@Override
 	public void onClick(View v) {
 		switch (v.getId()) {
-		case R.id.label_interfaces:
-		case R.id.img_3g:
-		case R.id.img_wifi:
-			selectInterfaces();
-			break;
 		case R.id.label_mode:
 			selectMode();
 			break;

@@ -46,21 +46,18 @@ import android.util.Log;
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
-	public static final String VERSION = "1.3.7";
+	public static final String VERSION = "1.3.7-dev";
 	
 	// Preferences
 	public static final String PREFS_NAME 		= "DroidWallPrefs";
-	public static final String PREF_ALLOWEDUIDS = "AllowedUids";
+	public static final String PREF_3G_UIDS		= "AllowedUids3G";
+	public static final String PREF_WIFI_UIDS	= "AllowedUidsWifi";
 	public static final String PREF_PASSWORD 	= "Password";
 	public static final String PREF_MODE 		= "BlockMode";
-	public static final String PREF_ITFS 		= "Interfaces";
 	public static final String PREF_ENABLED		= "Enabled";
 	// Modes
 	public static final String MODE_WHITELIST = "whitelist";
 	public static final String MODE_BLACKLIST = "blacklist";
-	// Interfaces
-	public static final String ITF_3G = "2G/3G";
-	public static final String ITF_WIFI = "Wi-fi";
 	
 	// Cached applications
 	public static DroidApp applications[] = null;
@@ -86,46 +83,42 @@ public final class Api {
     /**
      * Purge and re-add all rules (internal implementation).
      * @param ctx application context (mandatory)
-     * @param uids list of selected uids to allow or disallow (depending on the working mode)
+     * @param uidsWifi list of selected UIDs for WIFI to allow or disallow (depending on the working mode)
+     * @param uids3g list of selected UIDs for 2G/3G to allow or disallow (depending on the working mode)
      * @param showErrors indicates if errors should be alerted
      */
-	private static boolean applyIptablesRulesImpl(Context ctx, List<Integer> uids, boolean showErrors) {
+	private static boolean applyIptablesRulesImpl(Context ctx, List<Integer> uidsWifi, List<Integer> uids3g, boolean showErrors) {
 		if (ctx == null) {
 			return false;
 		}
+		final String ITF_PARAM_WIFI	= "-o tiwlan+";
+		final String ITF_PARAM_3G	= "-o rmnet+";
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		final boolean whitelist = prefs.getString(PREF_MODE, MODE_WHITELIST).equals(MODE_WHITELIST);
-		boolean wifi = false; // Wi-fi selected ?
-		final String itfs = prefs.getString(PREF_ITFS, ITF_3G);
-		String itfFilter;
-		if (itfs.indexOf("|") != -1) {
-			itfFilter = ""; // Block all interfaces
-			wifi = true;
-		} else if (itfs.indexOf(ITF_3G) != -1) {
-			itfFilter = "-o rmnet+";; // Block all rmnet interfaces
-		} else {
-			itfFilter = "-o tiwlan+";; // Block all tiwlan interfaces
-			wifi = true;
-		}
+
     	final StringBuilder script = new StringBuilder();
 		try {
 			int code;
 			script.append("iptables -F || exit\n");
 			final String targetRule = (whitelist ? "ACCEPT" : "REJECT");
-			if (whitelist && wifi) {
-				// When "white listing" Wi-fi, we need ensure that the dhcp and wifi users are allowed
+			if (whitelist) {
+				// When "white listing" wifi, we need ensure that the dhcp and wifi users are allowed
 				int uid = android.os.Process.getUidForName("dhcp");
-				if (uid != -1) script.append("iptables -A OUTPUT " + itfFilter + " -m owner --uid-owner " + uid + " -j ACCEPT || exit\n");
+				if (uid != -1) script.append("iptables -A OUTPUT -o tiwlan+ -m owner --uid-owner " + uid + " -j ACCEPT || exit\n");
 				uid = android.os.Process.getUidForName("wifi");
-				if (uid != -1) script.append("iptables -A OUTPUT " + itfFilter + " -m owner --uid-owner " + uid + " -j ACCEPT || exit\n");
+				if (uid != -1) script.append("iptables -A OUTPUT -o tiwlan+ -m owner --uid-owner " + uid + " -j ACCEPT || exit\n");
 			}
-			for (Integer uid : uids) {
-				script.append("iptables -A OUTPUT " + itfFilter + " -m owner --uid-owner " + uid + " -j " + targetRule + " || exit\n");
+			for (Integer uid : uids3g) {
+				script.append("iptables -A OUTPUT " + ITF_PARAM_3G + " -m owner --uid-owner " + uid + " -j " + targetRule + " || exit\n");
+			}
+			for (Integer uid : uidsWifi) {
+				script.append("iptables -A OUTPUT " + ITF_PARAM_WIFI + " -m owner --uid-owner " + uid + " -j " + targetRule + " || exit\n");
 			}
 			if (whitelist) {
-				script.append("iptables -A OUTPUT " + itfFilter + " -j REJECT || exit\n");
+				script.append("iptables -A OUTPUT " + ITF_PARAM_3G + " -j REJECT || exit\n");
+				script.append("iptables -A OUTPUT " + ITF_PARAM_WIFI + " -j REJECT || exit\n");
 			}
-	    	StringBuilder res = new StringBuilder();
+	    	final StringBuilder res = new StringBuilder();
 			code = runScriptAsRoot(script.toString(), res);
 			if (showErrors && code != 0) {
 				String msg = res.toString();
@@ -161,17 +154,28 @@ public final class Api {
 		if (ctx == null) {
 			return false;
 		}
-		final String savedNames = ctx.getSharedPreferences(PREFS_NAME, 0).getString(PREF_ALLOWEDUIDS, "");
-		List<Integer> uids = new LinkedList<Integer>();
-		if (savedNames.length() > 0) {
-			// Check which applications are allowed
-			final StringTokenizer tok = new StringTokenizer(savedNames, "|");
+		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
+		final String savedNames_wifi = prefs.getString(PREF_WIFI_UIDS, "");
+		final String savedNames_3g = prefs.getString(PREF_3G_UIDS, "");
+		final List<Integer> uids_wifi = new LinkedList<Integer>();
+		if (savedNames_wifi.length() > 0) {
+			// Check which applications are allowed on wifi
+			final StringTokenizer tok = new StringTokenizer(savedNames_wifi, "|");
 			while (tok.hasMoreTokens()) {
-				uids.add(android.os.Process.getUidForName(tok.nextToken()));
+				uids_wifi.add(android.os.Process.getUidForName(tok.nextToken()));
 			}
 		}
-		return applyIptablesRulesImpl(ctx, uids, showErrors);
+		final List<Integer> uids_3g = new LinkedList<Integer>();
+		if (savedNames_3g.length() > 0) {
+			// Check which applications are allowed on 2G/3G
+			final StringTokenizer tok = new StringTokenizer(savedNames_3g, "|");
+			while (tok.hasMoreTokens()) {
+				uids_3g.add(android.os.Process.getUidForName(tok.nextToken()));
+			}
+		}
+		return applyIptablesRulesImpl(ctx, uids_wifi, uids_3g, showErrors);
 	}
+	
     /**
      * Purge and re-add all rules.
      * @param ctx application context (mandatory)
@@ -181,25 +185,43 @@ public final class Api {
 		if (ctx == null) {
 			return false;
 		}
+		saveRules(ctx);
+		return applySavedIptablesRules(ctx, showErrors);
+    }
+	
+	/**
+	 * Save current rules using the preferences storage.
+	 * @param ctx application context (mandatory)
+	 */
+	public static void saveRules(Context ctx) {
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
-		List<Integer> uidsToApply = new LinkedList<Integer>();
 		final DroidApp[] apps = getApps(ctx);
 		// Builds a pipe-separated list of names
-		final StringBuilder newnames = new StringBuilder();
+		final StringBuilder newnames_wifi = new StringBuilder();
+		final StringBuilder newnames_3g = new StringBuilder();
 		for (int i=0; i<apps.length; i++) {
-			if (apps[i].selected) {
-				if (newnames.length() != 0) newnames.append('|');
-				newnames.append(apps[i].username);
-				uidsToApply.add(apps[i].uid);
+			if (apps[i].selected_wifi) {
+				if (newnames_wifi.length() != 0) newnames_wifi.append('|');
+				newnames_wifi.append(apps[i].username);
+			}
+			if (apps[i].selected_3g) {
+				if (newnames_3g.length() != 0) newnames_3g.append('|');
+				newnames_3g.append(apps[i].username);
 			}
 		}
 		// save the new list of names if necessary
-		if (!newnames.toString().equals(prefs.getString(PREF_ALLOWEDUIDS, ""))) {
-			Editor edit = prefs.edit();
-			edit.putString(PREF_ALLOWEDUIDS, newnames.toString());
+		Editor edit = null;
+		if (!newnames_wifi.toString().equals(prefs.getString(PREF_WIFI_UIDS, ""))) {
+			if (edit == null) edit = prefs.edit();
+			edit.putString(PREF_WIFI_UIDS, newnames_wifi.toString());
+		}
+		if (!newnames_3g.toString().equals(prefs.getString(PREF_3G_UIDS, ""))) {
+			if (edit == null) edit = prefs.edit();
+			edit.putString(PREF_3G_UIDS, newnames_3g.toString());
+		}
+		if (edit != null) {
 			edit.commit();
 		}
-		return applyIptablesRulesImpl(ctx, uidsToApply, showErrors);
     }
     
     /**
@@ -248,19 +270,29 @@ public final class Api {
 		hastether = null;
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		// allowed application names separated by pipe '|' (persisted)
-		final String savedNames = prefs.getString(PREF_ALLOWEDUIDS, "");
-		String allowed[];
-		if (savedNames.length() > 0) {
+		String savedNames_wifi = prefs.getString(PREF_WIFI_UIDS, "");
+		String savedNames_3g = prefs.getString(PREF_3G_UIDS, "");
+		String selected_wifi[] = new String[0];
+		String selected_3g[] = new String[0];
+		if (savedNames_wifi.length() > 0) {
 			// Check which applications are allowed
-			final StringTokenizer tok = new StringTokenizer(savedNames, "|");
-			allowed = new String[tok.countTokens()];
-			for (int i=0; i<allowed.length; i++) {
-				allowed[i] = tok.nextToken();
+			final StringTokenizer tok = new StringTokenizer(savedNames_wifi, "|");
+			selected_wifi = new String[tok.countTokens()];
+			for (int i=0; i<selected_wifi.length; i++) {
+				selected_wifi[i] = tok.nextToken();
 			}
 			// Sort the array to allow using "Arrays.binarySearch" later
-			Arrays.sort(allowed);
-		} else {
-			allowed = new String[0];
+			Arrays.sort(selected_wifi);
+		}
+		if (savedNames_3g.length() > 0) {
+			// Check which applications are allowed
+			final StringTokenizer tok = new StringTokenizer(savedNames_3g, "|");
+			selected_3g = new String[tok.countTokens()];
+			for (int i=0; i<selected_3g.length; i++) {
+				selected_3g[i] = tok.nextToken();
+			}
+			// Sort the array to allow using "Arrays.binarySearch" later
+			Arrays.sort(selected_3g);
 		}
 		try {
 			final PackageManager pkgmanager = ctx.getPackageManager();
@@ -291,22 +323,28 @@ public final class Api {
 					newnames[app.names.length] = name;
 					app.names = newnames;
 				}
-				// check if this application is allowed
-				if (!app.selected && Arrays.binarySearch(allowed, app.username) >= 0) {
-					app.selected = true;
+				// check if this application is selected
+				if (!app.selected_wifi && Arrays.binarySearch(selected_wifi, app.username) >= 0) {
+					app.selected_wifi = true;
+				}
+				if (!app.selected_3g && Arrays.binarySearch(selected_3g, app.username) >= 0) {
+					app.selected_3g = true;
 				}
 			}
 			/* add special applications to the list */
 			final DroidApp special[] = {
-				new DroidApp(android.os.Process.getUidForName("root"), "root", "(Applications running as root)", false),
-				new DroidApp(android.os.Process.getUidForName("media"), "media", "Media server", false),
+				new DroidApp(android.os.Process.getUidForName("root"), "root", "(Applications running as root)", false, false),
+				new DroidApp(android.os.Process.getUidForName("media"), "media", "Media server", false, false),
 			};
 			for (int i=0; i<special.length; i++) {
 				app = special[i];
 				if (app.uid != -1 && !map.containsKey(app.uid)) {
 					// check if this application is allowed
-					if (Arrays.binarySearch(allowed, app.username) >= 0) {
-						app.selected = true;
+					if (Arrays.binarySearch(selected_wifi, app.username) >= 0) {
+						app.selected_wifi = true;
+					}
+					if (Arrays.binarySearch(selected_3g, app.username) >= 0) {
+						app.selected_3g = true;
 					}
 					map.put(app.uid, app);
 				}
@@ -405,18 +443,21 @@ public final class Api {
     	String username;
     	/** application names belonging to this user id */
     	String names[];
-    	/** indicates if this application is selected (checked) */
-    	boolean selected;
+    	/** indicates if this application is selected for wifi */
+    	boolean selected_wifi;
+    	/** indicates if this application is selected for 3g */
+    	boolean selected_3g;
     	/** toString cache */
     	String tostr;
     	
     	public DroidApp() {
     	}
-    	public DroidApp(int uid, String username, String name, boolean selected) {
+    	public DroidApp(int uid, String username, String name, boolean selected_wifi, boolean selected_3g) {
     		this.uid = uid;
     		this.username = username;
     		this.names = new String[] {name};
-    		this.selected = selected;
+    		this.selected_wifi = selected_wifi;
+    		this.selected_3g = selected_3g;
     	}
     	/**
     	 * Screen representation of this application
