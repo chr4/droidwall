@@ -118,17 +118,12 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     		editor.putString(Api.PREF_MODE, Api.MODE_WHITELIST);
     		changed = true;
     	}
-    	/* migrate the old preference name */
-    	if (prefs.getString("AllowedUids", "").length() > 0) {
-    		final String uids = prefs.getString("AllowedUids", "");
-    		final String itfs = prefs.getString("Interfaces", "3G");
-    		if (itfs.indexOf("3G") != -1) {
-        		editor.putString(Api.PREF_3G_UIDS, uids);
-    		}
-    		if (itfs.indexOf("Wi-fi") != -1) {
-        		editor.putString(Api.PREF_WIFI_UIDS, uids);
-    		}
+    	/* delete the old preference names */
+    	if (prefs.contains("AllowedUids")) {
     		editor.remove("AllowedUids");
+    		changed = true;
+    	}
+    	if (prefs.contains("Interfaces")) {
     		editor.remove("Interfaces");
     		changed = true;
     	}

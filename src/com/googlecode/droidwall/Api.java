@@ -155,22 +155,34 @@ public final class Api {
 			return false;
 		}
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
-		final String savedNames_wifi = prefs.getString(PREF_WIFI_UIDS, "");
-		final String savedNames_3g = prefs.getString(PREF_3G_UIDS, "");
+		final String savedUids_wifi = prefs.getString(PREF_WIFI_UIDS, "");
+		final String savedUids_3g = prefs.getString(PREF_3G_UIDS, "");
 		final List<Integer> uids_wifi = new LinkedList<Integer>();
-		if (savedNames_wifi.length() > 0) {
+		if (savedUids_wifi.length() > 0) {
 			// Check which applications are allowed on wifi
-			final StringTokenizer tok = new StringTokenizer(savedNames_wifi, "|");
+			final StringTokenizer tok = new StringTokenizer(savedUids_wifi, "|");
 			while (tok.hasMoreTokens()) {
-				uids_wifi.add(android.os.Process.getUidForName(tok.nextToken()));
+				final String uid = tok.nextToken();
+				if (!uid.equals("")) {
+					try {
+						uids_wifi.add(Integer.parseInt(uid));
+					} catch (Exception ex) {
+					}
+				}
 			}
 		}
 		final List<Integer> uids_3g = new LinkedList<Integer>();
-		if (savedNames_3g.length() > 0) {
+		if (savedUids_3g.length() > 0) {
 			// Check which applications are allowed on 2G/3G
-			final StringTokenizer tok = new StringTokenizer(savedNames_3g, "|");
+			final StringTokenizer tok = new StringTokenizer(savedUids_3g, "|");
 			while (tok.hasMoreTokens()) {
-				uids_3g.add(android.os.Process.getUidForName(tok.nextToken()));
+				final String uid = tok.nextToken();
+				if (!uid.equals("")) {
+					try {
+						uids_3g.add(Integer.parseInt(uid));
+					} catch (Exception ex) {
+					}
+				}
 			}
 		}
 		return applyIptablesRulesImpl(ctx, uids_wifi, uids_3g, showErrors);
@@ -197,31 +209,23 @@ public final class Api {
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		final DroidApp[] apps = getApps(ctx);
 		// Builds a pipe-separated list of names
-		final StringBuilder newnames_wifi = new StringBuilder();
-		final StringBuilder newnames_3g = new StringBuilder();
+		final StringBuilder newuids_wifi = new StringBuilder();
+		final StringBuilder newuids_3g = new StringBuilder();
 		for (int i=0; i<apps.length; i++) {
 			if (apps[i].selected_wifi) {
-				if (newnames_wifi.length() != 0) newnames_wifi.append('|');
-				newnames_wifi.append(apps[i].username);
+				if (newuids_wifi.length() != 0) newuids_wifi.append('|');
+				newuids_wifi.append(apps[i].uid);
 			}
 			if (apps[i].selected_3g) {
-				if (newnames_3g.length() != 0) newnames_3g.append('|');
-				newnames_3g.append(apps[i].username);
+				if (newuids_3g.length() != 0) newuids_3g.append('|');
+				newuids_3g.append(apps[i].uid);
 			}
 		}
-		// save the new list of names if necessary
-		Editor edit = null;
-		if (!newnames_wifi.toString().equals(prefs.getString(PREF_WIFI_UIDS, ""))) {
-			if (edit == null) edit = prefs.edit();
-			edit.putString(PREF_WIFI_UIDS, newnames_wifi.toString());
-		}
-		if (!newnames_3g.toString().equals(prefs.getString(PREF_3G_UIDS, ""))) {
-			if (edit == null) edit = prefs.edit();
-			edit.putString(PREF_3G_UIDS, newnames_3g.toString());
-		}
-		if (edit != null) {
-			edit.commit();
-		}
+		// save the new list of UIDs
+		final Editor edit = prefs.edit();
+		edit.putString(PREF_WIFI_UIDS, newuids_wifi.toString());
+		edit.putString(PREF_3G_UIDS, newuids_3g.toString());
+		edit.commit();
     }
     
     /**
@@ -270,26 +274,40 @@ public final class Api {
 		hastether = null;
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		// allowed application names separated by pipe '|' (persisted)
-		String savedNames_wifi = prefs.getString(PREF_WIFI_UIDS, "");
-		String savedNames_3g = prefs.getString(PREF_3G_UIDS, "");
-		String selected_wifi[] = new String[0];
-		String selected_3g[] = new String[0];
-		if (savedNames_wifi.length() > 0) {
+		final String savedUids_wifi = prefs.getString(PREF_WIFI_UIDS, "");
+		final String savedUids_3g = prefs.getString(PREF_3G_UIDS, "");
+		int selected_wifi[] = new int[0];
+		int selected_3g[] = new int[0];
+		if (savedUids_wifi.length() > 0) {
 			// Check which applications are allowed
-			final StringTokenizer tok = new StringTokenizer(savedNames_wifi, "|");
-			selected_wifi = new String[tok.countTokens()];
+			final StringTokenizer tok = new StringTokenizer(savedUids_wifi, "|");
+			selected_wifi = new int[tok.countTokens()];
 			for (int i=0; i<selected_wifi.length; i++) {
-				selected_wifi[i] = tok.nextToken();
+				final String uid = tok.nextToken();
+				if (!uid.equals("")) {
+					try {
+						selected_wifi[i] = Integer.parseInt(uid);
+					} catch (Exception ex) {
+						selected_wifi[i] = -1;
+					}
+				}
 			}
 			// Sort the array to allow using "Arrays.binarySearch" later
 			Arrays.sort(selected_wifi);
 		}
-		if (savedNames_3g.length() > 0) {
+		if (savedUids_3g.length() > 0) {
 			// Check which applications are allowed
-			final StringTokenizer tok = new StringTokenizer(savedNames_3g, "|");
-			selected_3g = new String[tok.countTokens()];
+			final StringTokenizer tok = new StringTokenizer(savedUids_3g, "|");
+			selected_3g = new int[tok.countTokens()];
 			for (int i=0; i<selected_3g.length; i++) {
-				selected_3g[i] = tok.nextToken();
+				final String uid = tok.nextToken();
+				if (!uid.equals("")) {
+					try {
+						selected_3g[i] = Integer.parseInt(uid);
+					} catch (Exception ex) {
+						selected_3g[i] = -1;
+					}
+				}
 			}
 			// Sort the array to allow using "Arrays.binarySearch" later
 			Arrays.sort(selected_3g);
@@ -314,7 +332,6 @@ public final class Api {
 				if (app == null) {
 					app = new DroidApp();
 					app.uid = apinfo.uid;
-					app.username = pkgmanager.getNameForUid(apinfo.uid);
 					app.names = new String[] { name };
 					map.put(apinfo.uid, app);
 				} else {
@@ -324,26 +341,26 @@ public final class Api {
 					app.names = newnames;
 				}
 				// check if this application is selected
-				if (!app.selected_wifi && Arrays.binarySearch(selected_wifi, app.username) >= 0) {
+				if (!app.selected_wifi && Arrays.binarySearch(selected_wifi, app.uid) >= 0) {
 					app.selected_wifi = true;
 				}
-				if (!app.selected_3g && Arrays.binarySearch(selected_3g, app.username) >= 0) {
+				if (!app.selected_3g && Arrays.binarySearch(selected_3g, app.uid) >= 0) {
 					app.selected_3g = true;
 				}
 			}
 			/* add special applications to the list */
 			final DroidApp special[] = {
-				new DroidApp(android.os.Process.getUidForName("root"), "root", "(Applications running as root)", false, false),
-				new DroidApp(android.os.Process.getUidForName("media"), "media", "Media server", false, false),
+				new DroidApp(android.os.Process.getUidForName("root"), "(Applications running as root)", false, false),
+				new DroidApp(android.os.Process.getUidForName("media"), "Media server", false, false),
 			};
 			for (int i=0; i<special.length; i++) {
 				app = special[i];
 				if (app.uid != -1 && !map.containsKey(app.uid)) {
 					// check if this application is allowed
-					if (Arrays.binarySearch(selected_wifi, app.username) >= 0) {
+					if (Arrays.binarySearch(selected_wifi, app.uid) >= 0) {
 						app.selected_wifi = true;
 					}
-					if (Arrays.binarySearch(selected_3g, app.username) >= 0) {
+					if (Arrays.binarySearch(selected_3g, app.uid) >= 0) {
 						app.selected_3g = true;
 					}
 					map.put(app.uid, app);
@@ -439,8 +456,6 @@ public final class Api {
 	public static final class DroidApp {
 		/** linux user id */
     	int uid;
-    	/** application user name (Android actually uses a package name to identify) */
-    	String username;
     	/** application names belonging to this user id */
     	String names[];
     	/** indicates if this application is selected for wifi */
@@ -452,9 +467,8 @@ public final class Api {
     	
     	public DroidApp() {
     	}
-    	public DroidApp(int uid, String username, String name, boolean selected_wifi, boolean selected_3g) {
+    	public DroidApp(int uid, String name, boolean selected_wifi, boolean selected_3g) {
     		this.uid = uid;
-    		this.username = username;
     		this.names = new String[] {name};
     		this.selected_wifi = selected_wifi;
     		this.selected_3g = selected_3g;
