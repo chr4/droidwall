@@ -46,7 +46,7 @@ import android.util.Log;
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
-	public static final String VERSION = "1.3.7-dev";
+	public static final String VERSION = "1.3.7";
 	
 	// Preferences
 	public static final String PREFS_NAME 		= "DroidWallPrefs";
