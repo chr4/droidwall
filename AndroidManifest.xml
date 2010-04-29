@@ -13,6 +13,14 @@
 	    <receiver android:name="BootBroadcast" android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
 	    	<intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"></action></intent-filter>
 		</receiver>
+        <receiver android:name="StatusWidget">
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/onoff_widget" />
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.googlecode.droidwall.intent.action.STATUS_CHANGED"/>
+                <action android:name="com.googlecode.droidwall.intent.action.TOGGLE_REQUEST"/>
+            </intent-filter>
+        </receiver>
 	</application>
     <uses-sdk android:minSdkVersion="3" />
 </manifest> 

@@ -2,7 +2,7 @@
  * Contains shared programming interfaces.
  * All iptables "communication" is handled by this class.
  * 
- * Copyright (C) 2009  Rodrigo Zechin Rosauro
+ * Copyright (C) 2009-2010  Rodrigo Zechin Rosauro
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ import java.util.StringTokenizer;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.ApplicationInfo;
@@ -58,6 +59,10 @@ public final class Api {
 	// Modes
 	public static final String MODE_WHITELIST = "whitelist";
 	public static final String MODE_BLACKLIST = "blacklist";
+	// Messages
+	public static final String STATUS_CHANGED_MSG 	= "com.googlecode.droidwall.intent.action.STATUS_CHANGED";
+	public static final String TOGGLE_REQUEST_MSG	= "com.googlecode.droidwall.intent.action.TOGGLE_REQUEST";
+	public static final String STATUS_EXTRA			= "com.googlecode.droidwall.intent.extra.STATUS";
 	
 	// Cached applications
 	public static DroidApp applications[] = null;
@@ -463,6 +468,10 @@ public final class Api {
 		final Editor edit = prefs.edit();
 		edit.putBoolean(PREF_ENABLED, enabled);
 		edit.commit();
+		/* notify */
+		final Intent message = new Intent(Api.STATUS_CHANGED_MSG);
+        message.putExtra(Api.STATUS_EXTRA, enabled);
+        ctx.sendBroadcast(message);
 	}
 
     /**

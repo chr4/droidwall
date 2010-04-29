@@ -2,7 +2,7 @@
  * Main application activity.
  * This is the screen displayed when you open the application
  * 
- * Copyright (C) 2009  Rodrigo Zechin Rosauro
+ * Copyright (C) 2009-2010  Rodrigo Zechin Rosauro
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
