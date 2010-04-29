@@ -79,7 +79,6 @@ public final class Api {
         	.show();
     	}
     }
-    
     /**
      * Purge and re-add all rules (internal implementation).
      * @param ctx application context (mandatory)
@@ -91,8 +90,8 @@ public final class Api {
 		if (ctx == null) {
 			return false;
 		}
-		final String ITF_PARAM_WIFI	= "-o tiwlan+";
-		final String ITF_PARAM_3G	= "-o rmnet+";
+		final String ITFS_WIFI[] = {"tiwlan+","eth+"};
+		final String ITFS_3G[] = {"rmnet+","pdp+","ppp+"};
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		final boolean whitelist = prefs.getString(PREF_MODE, MODE_WHITELIST).equals(MODE_WHITELIST);
 
@@ -108,15 +107,23 @@ public final class Api {
 				uid = android.os.Process.getUidForName("wifi");
 				if (uid != -1) script.append("iptables -A OUTPUT -o tiwlan+ -m owner --uid-owner " + uid + " -j ACCEPT || exit\n");
 			}
-			for (Integer uid : uids3g) {
-				script.append("iptables -A OUTPUT " + ITF_PARAM_3G + " -m owner --uid-owner " + uid + " -j " + targetRule + " || exit\n");
+			for (final Integer uid : uids3g) {
+				for (final String itf : ITFS_3G) {
+					script.append("iptables -A OUTPUT -o " + itf + " -m owner --uid-owner " + uid + " -j " + targetRule + " || exit\n");
+				}
 			}
-			for (Integer uid : uidsWifi) {
-				script.append("iptables -A OUTPUT " + ITF_PARAM_WIFI + " -m owner --uid-owner " + uid + " -j " + targetRule + " || exit\n");
+			for (final Integer uid : uidsWifi) {
+				for (final String itf : ITFS_WIFI) {
+					script.append("iptables -A OUTPUT -o " + itf + " -m owner --uid-owner " + uid + " -j " + targetRule + " || exit\n");
+				}
 			}
 			if (whitelist) {
-				script.append("iptables -A OUTPUT " + ITF_PARAM_3G + " -j REJECT || exit\n");
-				script.append("iptables -A OUTPUT " + ITF_PARAM_WIFI + " -j REJECT || exit\n");
+				for (final String itf : ITFS_3G) {
+					script.append("iptables -A OUTPUT -o " + itf + " -j REJECT || exit\n");
+				}
+				for (final String itf : ITFS_WIFI) {
+					script.append("iptables -A OUTPUT -o " + itf + " -j REJECT || exit\n");
+				}
 			}
 	    	final StringBuilder res = new StringBuilder();
 			code = runScriptAsRoot(script.toString(), res);
