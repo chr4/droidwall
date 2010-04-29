@@ -46,7 +46,7 @@ import android.util.Log;
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
-	public static final String VERSION = "1.3.7";
+	public static final String VERSION = "1.3.8-dev";
 	
 	// Preferences
 	public static final String PREFS_NAME 		= "DroidWallPrefs";
@@ -103,26 +103,34 @@ public final class Api {
 			if (whitelist) {
 				// When "white listing" wifi, we need ensure that the dhcp and wifi users are allowed
 				int uid = android.os.Process.getUidForName("dhcp");
-				if (uid != -1) script.append("iptables -A OUTPUT -o tiwlan+ -m owner --uid-owner " + uid + " -j ACCEPT || exit\n");
+				if (uid != -1) {
+					for (final String itf : ITFS_WIFI) {
+						script.append("iptables -A OUTPUT -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ACCEPT || exit\n");
+					}
+				}
 				uid = android.os.Process.getUidForName("wifi");
-				if (uid != -1) script.append("iptables -A OUTPUT -o tiwlan+ -m owner --uid-owner " + uid + " -j ACCEPT || exit\n");
+				if (uid != -1) {
+					for (final String itf : ITFS_WIFI) {
+						script.append("iptables -A OUTPUT -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ACCEPT || exit\n");
+					}
+				}
 			}
 			for (final Integer uid : uids3g) {
 				for (final String itf : ITFS_3G) {
-					script.append("iptables -A OUTPUT -o " + itf + " -m owner --uid-owner " + uid + " -j " + targetRule + " || exit\n");
+					script.append("iptables -A OUTPUT -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
 				}
 			}
 			for (final Integer uid : uidsWifi) {
 				for (final String itf : ITFS_WIFI) {
-					script.append("iptables -A OUTPUT -o " + itf + " -m owner --uid-owner " + uid + " -j " + targetRule + " || exit\n");
+					script.append("iptables -A OUTPUT -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
 				}
 			}
 			if (whitelist) {
 				for (final String itf : ITFS_3G) {
-					script.append("iptables -A OUTPUT -o " + itf + " -j REJECT || exit\n");
+					script.append("iptables -A OUTPUT -o ").append(itf).append(" -j REJECT || exit\n");
 				}
 				for (final String itf : ITFS_WIFI) {
-					script.append("iptables -A OUTPUT -o " + itf + " -j REJECT || exit\n");
+					script.append("iptables -A OUTPUT -o ").append(itf).append(" -j REJECT || exit\n");
 				}
 			}
 	    	final StringBuilder res = new StringBuilder();
