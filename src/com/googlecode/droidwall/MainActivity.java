@@ -67,8 +67,6 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	
 	/** progress dialog instance */
 	private ProgressDialog progress = null;
-	/** have we alerted about incompatible apps already? */
-	private boolean alerted = false;
 	private ListView listview;
 	
     /** Called when the activity is first created. */
@@ -76,9 +74,6 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         checkPreferences();
-        if (savedInstanceState != null) {
-        	alerted = savedInstanceState.getBoolean("alerted", false);
-        }
 		setContentView(R.layout.main);
 		this.findViewById(R.id.label_mode).setOnClickListener(this);
     }
@@ -102,10 +97,6 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     protected void onPause() {
     	super.onPause();
     	this.listview.setAdapter(null);
-    }
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-    	if (alerted) outState.putBoolean("alerted", true);
     }
     /**
      * Check if the stored preferences are OK
@@ -157,17 +148,6 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 			}
     	}).setTitle("Select mode:")
     	.show();
-    }
-    /**
-     * Check and alert for incompatible apps
-     */
-    private void checkIncompatibleApps() {
-        if (!alerted && Api.hastether != null) {
-        	Api.alert(this, "Droid Wall has detected that you have the \"" + Api.hastether + "\" application installed on your system.\n\n" +
-        		"Since this application also uses iptables, it will overwrite Droid Wall rules (and vice-versa).\n" +
-        		"Please make sure that you re-apply Droid Wall rules every time you use \"" + Api.hastether + "\".");
-        	alerted = true;
-        }
     }
     /**
      * Set a new password lock
@@ -238,7 +218,6 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
      */
     private void showApplications() {
         final DroidApp[] apps = Api.getApps(this);
-        checkIncompatibleApps();
         // Sort applications - selected first, then alphabetically
         Arrays.sort(apps, new Comparator<DroidApp>() {
 			@Override

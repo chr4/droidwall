@@ -47,7 +47,7 @@ import android.util.Log;
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
-	public static final String VERSION = "1.3.8-dev";
+	public static final String VERSION = "1.4.0";
 	
 	// Preferences
 	public static final String PREFS_NAME 		= "DroidWallPrefs";
@@ -66,8 +66,6 @@ public final class Api {
 	
 	// Cached applications
 	public static DroidApp applications[] = null;
-	// Do we have "Wireless Tether for Root Users" installed?
-	public static String hastether = null;
 	// Do we have root access?
 	private static boolean hasroot = false;
 
@@ -291,7 +289,6 @@ public final class Api {
 			// return cached instance
 			return applications;
 		}
-		hastether = null;
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		// allowed application names separated by pipe '|' (persisted)
 		final String savedUids_wifi = prefs.getString(PREF_WIFI_UIDS, "");
@@ -336,18 +333,25 @@ public final class Api {
 			final PackageManager pkgmanager = ctx.getPackageManager();
 			final List<ApplicationInfo> installed = pkgmanager.getInstalledApplications(0);
 			final HashMap<Integer, DroidApp> map = new HashMap<Integer, DroidApp>();
-			String name;
-			DroidApp app;
+			final Editor edit = prefs.edit();
+			boolean changed = false;
+			String name = null;
+			String cachekey = null;
+			DroidApp app = null;
 			for (final ApplicationInfo apinfo : installed) {
 				app = map.get(apinfo.uid);
 				// filter applications which are not allowed to access the Internet
 				if (app == null && PackageManager.PERMISSION_GRANTED != pkgmanager.checkPermission(Manifest.permission.INTERNET, apinfo.packageName)) {
 					continue;
 				}
-				name = pkgmanager.getApplicationLabel(apinfo).toString();
-				// Check for the tethering application (which causes conflicts with Droid Wall)
-				if (apinfo.packageName.equals("android.tether")) {
-					hastether = name;
+				// try to get the application label from our cache - getApplicationLabel() is horribly slow!!!!
+				cachekey = "cache.label."+apinfo.packageName;
+				name = prefs.getString(cachekey, "");
+				if (name.length() == 0) {
+					// get label and put on cache
+					name = pkgmanager.getApplicationLabel(apinfo).toString();
+					edit.putString(cachekey, name);
+					changed = true;
 				}
 				if (app == null) {
 					app = new DroidApp();
@@ -367,6 +371,9 @@ public final class Api {
 				if (!app.selected_3g && Arrays.binarySearch(selected_3g, app.uid) >= 0) {
 					app.selected_3g = true;
 				}
+			}
+			if (changed) {
+				edit.commit();
 			}
 			/* add special applications to the list */
 			final DroidApp special[] = {
@@ -451,14 +458,24 @@ public final class Api {
      * @throws IOException on any error executing the script, or writing it to disk
      */
 	public static int runScriptAsRoot(String script, StringBuilder res) throws IOException {
-		return runScriptAsRoot(script, res, 15000);
+		return runScriptAsRoot(script, res, 20000);
 	}
 
+	/**
+	 * Check if the firewall is enabled
+	 * @param ctx mandatory context
+	 * @return boolean
+	 */
 	public static boolean isEnabled(Context ctx) {
 		if (ctx == null) return false;
 		return ctx.getSharedPreferences(PREFS_NAME, 0).getBoolean(PREF_ENABLED, true);
 	}
 	
+	/**
+	 * Defines if the firewall is enabled and broadcasts the new status
+	 * @param ctx mandatory context
+	 * @param enabled enabled flag
+	 */
 	public static void setEnabled(Context ctx, boolean enabled) {
 		if (ctx == null) return;
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
@@ -538,6 +555,11 @@ public final class Api {
 				// note that this will create a shell that we must interact to (using stdin/stdout)
 				exec = Runtime.getRuntime().exec("su");
 				final OutputStreamWriter out = new OutputStreamWriter(exec.getOutputStream());
+				InputStreamReader r = new InputStreamReader(exec.getInputStream());
+				// Write a simple "echo" command and wait for something in the output buffer
+				out.write("echo X\n");
+				out.flush();
+				r.read(new char[2]); // two bytes ("X\n")
 				// Write the script to be executed
 				out.write(script);
 				// Ensure that the last character is an "enter"
@@ -547,9 +569,8 @@ public final class Api {
 				out.write("exit\n");
 				out.flush();
 				final char buf[] = new char[1024];
+				int read = 0;
 				// Consume the "stdout"
-				InputStreamReader r = new InputStreamReader(exec.getInputStream());
-				int read=0;
 				while ((read=r.read(buf)) != -1) {
 					if (res != null) res.append(buf, 0, read);
 				}
