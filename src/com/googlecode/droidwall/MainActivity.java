@@ -263,7 +263,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-    	menu.add(0, MENU_DISABLE, 0, R.string.disable_fw).setIcon(android.R.drawable.button_onoff_indicator_off);
+    	menu.add(0, MENU_DISABLE, 0, R.string.disable_fw).setIcon(android.R.drawable.button_onoff_indicator_on);
     	menu.add(0, MENU_SHOWRULES, 0, R.string.showrules).setIcon(R.drawable.show);
     	menu.add(0, MENU_APPLY, 0, R.string.applyrules).setIcon(R.drawable.apply);
     	menu.add(0, MENU_SETPWD, 0, R.string.setpwd).setIcon(android.R.drawable.ic_lock_lock);
@@ -274,10 +274,10 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     public boolean onPrepareOptionsMenu(Menu menu) {
     	final MenuItem item = menu.getItem(MENU_DISABLE);
     	if (Api.isEnabled(this)) {
-    		item.setIcon(android.R.drawable.button_onoff_indicator_off);
+    		item.setIcon(android.R.drawable.button_onoff_indicator_on);
     		item.setTitle(R.string.disable_fw);
     	} else {
-    		item.setIcon(android.R.drawable.button_onoff_indicator_on);
+    		item.setIcon(android.R.drawable.button_onoff_indicator_off);
     		item.setTitle(R.string.enable_fw);
     	}
     	return super.onPrepareOptionsMenu(menu);
