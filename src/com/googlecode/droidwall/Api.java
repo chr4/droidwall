@@ -47,7 +47,10 @@ import android.util.Log;
  * All iptables "communication" is handled by this class.
  */
 public final class Api {
+	/** application version string */
 	public static final String VERSION = "1.4.0";
+	/** special application UID used to indicate "any application" */
+	public static final int SPECIAL_UID_ANY	= -10;
 	
 	// Preferences
 	public static final String PREFS_NAME 		= "DroidWallPrefs";
@@ -97,13 +100,16 @@ public final class Api {
 		final String ITFS_3G[] = {"rmnet+","pdp+","ppp+"};
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		final boolean whitelist = prefs.getString(PREF_MODE, MODE_WHITELIST).equals(MODE_WHITELIST);
+		final boolean blacklist = !whitelist;
 
     	final StringBuilder script = new StringBuilder();
 		try {
 			int code;
 			script.append("iptables -F || exit\n");
 			final String targetRule = (whitelist ? "ACCEPT" : "REJECT");
-			if (whitelist) {
+			final boolean any_3g = uids3g.indexOf(SPECIAL_UID_ANY) >= 0;
+			final boolean any_wifi = uidsWifi.indexOf(SPECIAL_UID_ANY) >= 0;
+			if (whitelist && !any_wifi) {
 				// When "white listing" wifi, we need ensure that the dhcp and wifi users are allowed
 				int uid = android.os.Process.getUidForName("dhcp");
 				if (uid != -1) {
@@ -118,22 +124,46 @@ public final class Api {
 					}
 				}
 			}
-			for (final Integer uid : uids3g) {
-				for (final String itf : ITFS_3G) {
-					script.append("iptables -A OUTPUT -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
+			if (any_3g) {
+				if (blacklist) {
+					/* block any application on this interface */
+					for (final String itf : ITFS_3G) {
+						script.append("iptables -A OUTPUT -o ").append(itf).append(" -j ").append(targetRule).append(" || exit\n");
+					}
+				}
+			} else {
+				/* release/block individual applications on this interface */
+				for (final Integer uid : uids3g) {
+					for (final String itf : ITFS_3G) {
+						script.append("iptables -A OUTPUT -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
+					}
 				}
 			}
-			for (final Integer uid : uidsWifi) {
-				for (final String itf : ITFS_WIFI) {
-					script.append("iptables -A OUTPUT -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
+			if (any_wifi) {
+				if (blacklist) {
+					/* block any application on this interface */
+					for (final String itf : ITFS_WIFI) {
+						script.append("iptables -A OUTPUT -o ").append(itf).append(" -j ").append(targetRule).append(" || exit\n");
+					}
+				}
+			} else {
+				/* release/block individual applications on this interface */
+				for (final Integer uid : uidsWifi) {
+					for (final String itf : ITFS_WIFI) {
+						script.append("iptables -A OUTPUT -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
+					}
 				}
 			}
 			if (whitelist) {
-				for (final String itf : ITFS_3G) {
-					script.append("iptables -A OUTPUT -o ").append(itf).append(" -j REJECT || exit\n");
+				if (!any_3g) {
+					for (final String itf : ITFS_3G) {
+						script.append("iptables -A OUTPUT -o ").append(itf).append(" -j REJECT || exit\n");
+					}
 				}
-				for (final String itf : ITFS_WIFI) {
-					script.append("iptables -A OUTPUT -o ").append(itf).append(" -j REJECT || exit\n");
+				if (!any_wifi) {
+					for (final String itf : ITFS_WIFI) {
+						script.append("iptables -A OUTPUT -o ").append(itf).append(" -j REJECT || exit\n");
+					}
 				}
 			}
 	    	final StringBuilder res = new StringBuilder();
@@ -377,6 +407,7 @@ public final class Api {
 			}
 			/* add special applications to the list */
 			final DroidApp special[] = {
+				new DroidApp(SPECIAL_UID_ANY,"(Any application) - Same as selecting all applications", false, false),
 				new DroidApp(android.os.Process.getUidForName("root"), "(Applications running as root)", false, false),
 				new DroidApp(android.os.Process.getUidForName("media"), "Media server", false, false),
 			};
@@ -520,7 +551,8 @@ public final class Api {
     	@Override
     	public String toString() {
     		if (tostr == null) {
-        		final StringBuilder s = new StringBuilder(uid + ": ");
+        		final StringBuilder s = new StringBuilder();
+        		if (uid > 0) s.append(uid + ": ");
         		for (int i=0; i<names.length; i++) {
         			if (i != 0) s.append(", ");
         			s.append(names[i]);
