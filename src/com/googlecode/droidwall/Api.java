@@ -408,7 +408,7 @@ public final class Api {
 			/* add special applications to the list */
 			final DroidApp special[] = {
 				new DroidApp(SPECIAL_UID_ANY,"(Any application) - Same as selecting all applications", false, false),
-				new DroidApp(android.os.Process.getUidForName("root"), "(Applications running as root)", false, false),
+				new DroidApp(android.os.Process.getUidForName("root"), "(root) - Applications running as root", false, false),
 				new DroidApp(android.os.Process.getUidForName("media"), "Media server", false, false),
 			};
 			for (int i=0; i<special.length; i++) {
@@ -557,6 +557,7 @@ public final class Api {
         			if (i != 0) s.append(", ");
         			s.append(names[i]);
         		}
+        		s.append("\n");
         		tostr = s.toString();
     		}
     		return tostr;
