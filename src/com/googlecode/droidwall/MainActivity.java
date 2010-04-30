@@ -339,7 +339,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
-				if (!Api.hasRootAccess(MainActivity.this)) return;
+				if (!Api.hasRootAccess(MainActivity.this, true)) return;
 				Api.showIptablesRules(MainActivity.this);
 			}
 		};
@@ -354,7 +354,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
-				if (!Api.hasRootAccess(MainActivity.this)) return;
+				if (!Api.hasRootAccess(MainActivity.this, true)) return;
 				if (Api.applyIptablesRules(MainActivity.this, true)) {
 					Toast.makeText(MainActivity.this, "Rules applied with success", Toast.LENGTH_SHORT).show();
 				}
@@ -371,8 +371,8 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
-				if (!Api.hasRootAccess(MainActivity.this)) return;
-				if (Api.purgeIptables(MainActivity.this)) {
+				if (!Api.hasRootAccess(MainActivity.this, true)) return;
+				if (Api.purgeIptables(MainActivity.this, true)) {
 					Toast.makeText(MainActivity.this, "Rules purged with success", Toast.LENGTH_SHORT).show();
 				}
 			}

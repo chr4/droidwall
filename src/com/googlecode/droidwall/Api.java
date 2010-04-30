@@ -23,6 +23,8 @@
 
 package com.googlecode.droidwall;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -48,9 +50,11 @@ import android.util.Log;
  */
 public final class Api {
 	/** application version string */
-	public static final String VERSION = "1.4.0";
+	public static final String VERSION = "1.4.0-dev";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
+	/** root script filename */
+	private static final String SCRIPT_FILE = "droidwall.sh";
 	
 	// Preferences
 	public static final String PREFS_NAME 		= "DroidWallPrefs";
@@ -167,7 +171,7 @@ public final class Api {
 				}
 			}
 	    	final StringBuilder res = new StringBuilder();
-			code = runScriptAsRoot(script.toString(), res);
+			code = runScriptAsRoot(ctx, script.toString(), res);
 			if (showErrors && code != 0) {
 				String msg = res.toString();
 				Log.e("DroidWall", msg);
@@ -278,20 +282,21 @@ public final class Api {
     
     /**
      * Purge all iptables rules.
-     * @param ctx context optional context for alert messages
+     * @param ctx mandatory context
+     * @param showErrors indicates if errors should be alerted
      * @return true if the rules were purged
      */
-	public static boolean purgeIptables(Context ctx) {
+	public static boolean purgeIptables(Context ctx, boolean showErrors) {
     	StringBuilder res = new StringBuilder();
 		try {
-			int code = runScriptAsRoot("iptables -F || exit\n", res);
+			int code = runScriptAsRoot(ctx, "iptables -F || exit\n", res);
 			if (code != 0) {
-				alert(ctx, "error purging iptables. exit code: " + code + "\n" + res);
+				if (showErrors) alert(ctx, "error purging iptables. exit code: " + code + "\n" + res);
 				return false;
 			}
 			return true;
 		} catch (Exception e) {
-			alert(ctx, "error purging iptables: " + e);
+			if (showErrors) alert(ctx, "error purging iptables: " + e);
 			return false;
 		}
     }
@@ -303,7 +308,7 @@ public final class Api {
 	public static void showIptablesRules(Context ctx) {
 		try {
     		final StringBuilder res = new StringBuilder();
-			runScriptAsRoot("iptables -L\n", res);
+			runScriptAsRoot(ctx, "iptables -L\n", res);
 			alert(ctx, res);
 		} catch (Exception e) {
 			alert(ctx, "error: " + e);
@@ -435,34 +440,40 @@ public final class Api {
 	}
 	/**
 	 * Check if we have root access
-	 * @param ctx optional context to display alert messages
+	 * @param ctx mandatory context
+     * @param showErrors indicates if errors should be alerted
 	 * @return boolean true if we have root
 	 */
-	public static boolean hasRootAccess(Context ctx) {
+	public static boolean hasRootAccess(Context ctx, boolean showErrors) {
 		if (hasroot) return true;
+		final StringBuilder res = new StringBuilder();
 		try {
 			// Run an empty script just to check root access
-			if (runScriptAsRoot("exit 0", null, 20000) == 0) {
+			if (runScriptAsRoot(ctx, "exit 0", res) == 0) {
 				hasroot = true;
 				return true;
 			}
 		} catch (Exception e) {
 		}
-		alert(ctx, "Could not acquire root access.\n" +
-			"You need a rooted phone to run Droid Wall.\n\n" +
-			"If this phone is already rooted, please make sure Droid Wall has enough permissions to execute the \"su\" command.");
+		if (showErrors) {
+			alert(ctx, "Could not acquire root access.\n" +
+				"You need a rooted phone to run Droid Wall.\n\n" +
+				"If this phone is already rooted, please make sure Droid Wall has enough permissions to execute the \"su\" command.\n" +
+				"Error message: " + res.toString());
+		}
 		return false;
 	}
     /**
      * Runs a script as root (multiple commands separated by "\n").
-     * 
+	 * @param ctx mandatory context
      * @param script the script to be executed
      * @param res the script output response (stdout + stderr)
      * @param timeout timeout in milliseconds (-1 for none)
      * @return the script exit code
      */
-	public static int runScriptAsRoot(String script, StringBuilder res, final long timeout) {
-		final ScriptRunner runner = new ScriptRunner(script, res);
+	public static int runScriptAsRoot(Context ctx, String script, StringBuilder res, final long timeout) {
+		final File file = new File(ctx.getCacheDir(), SCRIPT_FILE);
+		final ScriptRunner runner = new ScriptRunner(file, script, res);
 		runner.start();
 		try {
 			if (timeout > 0) {
@@ -473,6 +484,7 @@ public final class Api {
 			if (runner.isAlive()) {
 				// Timed-out
 				runner.interrupt();
+				runner.join(150);
 				runner.destroy();
 				runner.join(50);
 			}
@@ -480,16 +492,16 @@ public final class Api {
 		return runner.exitcode;
     }
     /**
-     * Runs a script as root (multiple commands separated by "\n") with a default timeout of 5 seconds.
-     * 
+     * Runs a script as root (multiple commands separated by "\n") with a default timeout of 20 seconds.
+	 * @param ctx mandatory context
      * @param script the script to be executed
      * @param res the script output response (stdout + stderr)
      * @param timeout timeout in milliseconds (-1 for none)
      * @return the script exit code
      * @throws IOException on any error executing the script, or writing it to disk
      */
-	public static int runScriptAsRoot(String script, StringBuilder res) throws IOException {
-		return runScriptAsRoot(script, res, 20000);
+	public static int runScriptAsRoot(Context ctx, String script, StringBuilder res) throws IOException {
+		return runScriptAsRoot(ctx, script, res, 40000);
 	}
 
 	/**
@@ -567,6 +579,7 @@ public final class Api {
 	 * Internal thread used to execute scripts as root.
 	 */
 	private static final class ScriptRunner extends Thread {
+		private final File file;
 		private final String script;
 		private final StringBuilder res;
 		public int exitcode = -1;
@@ -574,33 +587,31 @@ public final class Api {
 		
 		/**
 		 * Creates a new script runner.
+		 * @param file temporary script file
 		 * @param script script to run
 		 * @param res response output
 		 */
-		public ScriptRunner(String script, StringBuilder res) {
+		public ScriptRunner(File file, String script, StringBuilder res) {
+			this.file = file;
 			this.script = script;
 			this.res = res;
 		}
 		@Override
 		public void run() {
 			try {
-				// Create the "su" request to run the command
-				// note that this will create a shell that we must interact to (using stdin/stdout)
-				exec = Runtime.getRuntime().exec("su");
-				final OutputStreamWriter out = new OutputStreamWriter(exec.getOutputStream());
-				InputStreamReader r = new InputStreamReader(exec.getInputStream());
-				// Write a simple "echo" command and wait for something in the output buffer
-				out.write("echo X\n");
-				out.flush();
-				r.read(new char[2]); // two bytes ("X\n")
+				file.createNewFile();
+				final String abspath = file.getAbsolutePath();
+				// make sure we have execution permission on the script file
+				Runtime.getRuntime().exec("chmod 777 "+abspath).waitFor();
 				// Write the script to be executed
+				final OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file));
 				out.write(script);
-				// Ensure that the last character is an "enter"
 				if (!script.endsWith("\n")) out.write("\n");
-				out.flush();
-				// Terminate the "su" process
 				out.write("exit\n");
-				out.flush();
+				out.close();
+				// Create the "su" request to run the script
+				exec = Runtime.getRuntime().exec("su -c "+abspath);
+				InputStreamReader r = new InputStreamReader(exec.getInputStream());
 				final char buf[] = new char[1024];
 				int read = 0;
 				// Consume the "stdout"

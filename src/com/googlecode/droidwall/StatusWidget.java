@@ -62,7 +62,7 @@ public class StatusWidget extends AppWidgetProvider {
             		return;
             	}
             } else {
-            	if (Api.purgeIptables(null)) {
+            	if (Api.purgeIptables(context, false)) {
             		Toast.makeText(context, "Firewall disabled!", Toast.LENGTH_SHORT).show();
             	} else {
             		Toast.makeText(context, "Error disabling firewall!", Toast.LENGTH_SHORT).show();
