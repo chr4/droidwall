@@ -415,6 +415,7 @@ public final class Api {
 				new DroidApp(SPECIAL_UID_ANY,"(Any application) - Same as selecting all applications", false, false),
 				new DroidApp(android.os.Process.getUidForName("root"), "(root) - Applications running as root", false, false),
 				new DroidApp(android.os.Process.getUidForName("media"), "Media server", false, false),
+				new DroidApp(android.os.Process.getUidForName("vpn"), "VPN networking", false, false),
 			};
 			for (int i=0; i<special.length; i++) {
 				app = special[i];
