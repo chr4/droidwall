@@ -5,6 +5,7 @@
     <string name="title_disabled">Droid Wall (Firewall disabled)</string>
     <string name="showrules">Show rules</string>
     <string name="applyrules">Apply rules</string>
+    <string name="saverules">Save rules</string>
     <string name="purgerules">Purge rules</string>
     <string name="setpwd">Set password</string>
     <string name="help">Help</string>
@@ -15,23 +16,26 @@
     <string name="pass_titleget">Password required</string>
     <string name="enterpass">Enter the password:</string>
     <string name="enternewpass">Enter the new password (leave blank to remove):</string>
+    <string name="toast_bin_installed">Droid Wall: Binary files installed!</string>
+    <string name="toast_error_enabling">"Droid Wall: Error enabling firewall!"</string>
 	<string name="help_dialog_text"><i>Author: Rodrigo Zechin Rosauro</i>
 		\n<i><a href="http://droidwall.googlecode.com">http://droidwall.googlecode.com</a></i>
 		\n
 		\n<i>Droid Wall - Android Firewall</i> is a front-end application for the powerful <b>iptables</b> Linux firewall.
 		It allows you to restrict which applications are permitted to access your data networks.
-		\nThis is the perfect solution if you don't have an unlimited data plan, or just wants to see your battery lasting longer.
+		\nThis is the perfect solution if you don\'t have an unlimited data plan, or just wants to see your battery lasting longer.
 		\n<b>Using Droid Wall:</b>
 		\n<b>1.</b> Click on <b>Mode</b> to switch between <i>White List</i> and <i>Black List</i> modes.
 		\n<b>2.</b> Mark the applications that you want to block or allow (depending on the selected mode), for each interface.
-		\n<b>3.</b> Open the menu and click on <b>Apply rules</b> to modify your iptables rules.
-		\n<b>Note:</b> After applying the rules, they will be saved and automatically restored every-time you restart your phone.
+		\n<b>3.</b> Open the menu and click on <b>Enable Firewall</b>.
+		\n<b>Note:</b> After enabling the firewall, the rules will be saved and automatically restored every-time you restart your phone.
 		\n
 		\n<b>Other features:</b>
 		\nClick on <b>Show rules</b> menu to display current iptables rules output.
 		\n
-		\nClick on <b>Disable Firewall</b> menu to completely disable the Firewall.
-		You must manually enable the Firewall later by clicking on <b>Enable Firewall</b>.
+		\nClick on <b>Save rules</b> to save your currently selected applications without enabling the firewall.
+		\n
+		\nWhen the firewall is enabled, click on <b>Apply rules</b> to save your currently selected applications and immediately apply the rules.
 		\n
 		\n<b>Password lock:</b>
 		\nYou can set a password lock for Droid Wall by using the <b>Set password</b> menu option.

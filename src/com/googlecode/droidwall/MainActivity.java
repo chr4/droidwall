@@ -76,6 +76,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
         checkPreferences();
 		setContentView(R.layout.main);
 		this.findViewById(R.id.label_mode).setOnClickListener(this);
+		Api.assertBinaries(this, true);
     }
     @Override
     protected void onResume() {
@@ -272,13 +273,17 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     }
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-    	final MenuItem item = menu.getItem(MENU_DISABLE);
-    	if (Api.isEnabled(this)) {
-    		item.setIcon(android.R.drawable.button_onoff_indicator_on);
-    		item.setTitle(R.string.disable_fw);
+    	final MenuItem item_onoff = menu.getItem(MENU_DISABLE);
+    	final MenuItem item_apply = menu.getItem(MENU_APPLY);
+    	final boolean enabled = Api.isEnabled(this);
+    	if (enabled) {
+    		item_onoff.setIcon(android.R.drawable.button_onoff_indicator_on);
+    		item_onoff.setTitle(R.string.disable_fw);
+    		item_apply.setTitle(R.string.applyrules);
     	} else {
-    		item.setIcon(android.R.drawable.button_onoff_indicator_off);
-    		item.setTitle(R.string.enable_fw);
+    		item_onoff.setIcon(android.R.drawable.button_onoff_indicator_off);
+    		item_onoff.setTitle(R.string.enable_fw);
+    		item_apply.setTitle(R.string.saverules);
     	}
     	return super.onPrepareOptionsMenu(menu);
     }
@@ -292,7 +297,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     		showRules();
     		return true;
     	case MENU_APPLY:
-    		applyRules();
+    		applyOrSaveRules();
     		return true;
     	case MENU_SETPWD:
     		setPassword();
@@ -310,7 +315,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		final boolean enabled = !Api.isEnabled(this);
 		Api.setEnabled(this, enabled);
 		if (enabled) {
-			applyRules();
+			applyOrSaveRules();
 			setTitle(R.string.title_enabled);
 		} else {
 			purgeRules();
@@ -346,17 +351,23 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		handler.sendEmptyMessageDelayed(0, 100);
 	}
 	/**
-	 * Apply iptable rules, showing a visual indication
+	 * Apply or save iptable rules, showing a visual indication
 	 */
-	private void applyRules() {
+	private void applyOrSaveRules() {
 		final Handler handler;
-		progress = ProgressDialog.show(this, "Working...", "Applying iptables rules.", true);
+		final boolean enabled = Api.isEnabled(this);
+		progress = ProgressDialog.show(this, "Working...", (enabled?"Applying":"Saving") + " iptables rules.", true);
 		handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
 				if (!Api.hasRootAccess(MainActivity.this, true)) return;
-				if (Api.applyIptablesRules(MainActivity.this, true)) {
-					Toast.makeText(MainActivity.this, "Rules applied with success", Toast.LENGTH_SHORT).show();
+				if (enabled) {
+					if (Api.applyIptablesRules(MainActivity.this, true)) {
+						Toast.makeText(MainActivity.this, "Rules applied with success", Toast.LENGTH_SHORT).show();
+					}
+				} else {
+					Api.saveRules(MainActivity.this);
+					Toast.makeText(MainActivity.this, "Rules saved with success", Toast.LENGTH_SHORT).show();
 				}
 			}
 		};

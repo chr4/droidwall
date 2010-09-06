@@ -25,6 +25,7 @@ package com.googlecode.droidwall;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.widget.Toast;
 
 /**
  * Broadcast receiver that set iptables rules on system startup.
@@ -36,7 +37,11 @@ public class BootBroadcast extends BroadcastReceiver {
 	public void onReceive(Context context, Intent intent) {
 		if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
 			if (Api.isEnabled(context)) {
-				Api.applySavedIptablesRules(context, false);
+				if (!Api.applySavedIptablesRules(context, false)) {
+					// Error enabling firewall on boot
+					Toast.makeText(context, R.string.toast_error_enabling, Toast.LENGTH_SHORT).show();
+					Api.setEnabled(context, false);
+				}
 			}
 		}
 	}

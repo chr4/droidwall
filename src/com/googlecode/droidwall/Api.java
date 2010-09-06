@@ -26,6 +26,7 @@ package com.googlecode.droidwall;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
@@ -43,6 +44,7 @@ import android.content.SharedPreferences.Editor;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.util.Log;
+import android.widget.Toast;
 
 /**
  * Contains shared programming interfaces.
@@ -50,7 +52,7 @@ import android.util.Log;
  */
 public final class Api {
 	/** application version string */
-	public static final String VERSION = "1.4.0-dev";
+	public static final String VERSION = "1.4.0";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
 	/** root script filename */
@@ -100,6 +102,7 @@ public final class Api {
 		if (ctx == null) {
 			return false;
 		}
+		assertBinaries(ctx, showErrors);
 		final String ITFS_WIFI[] = {"tiwlan+","eth+"};
 		final String ITFS_3G[] = {"rmnet+","pdp+","ppp+"};
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
@@ -109,7 +112,16 @@ public final class Api {
     	final StringBuilder script = new StringBuilder();
 		try {
 			int code;
-			script.append("iptables -F || exit\n");
+			script.append("" +
+					"export PATH=" + ctx.getCacheDir() + ":$PATH\n" +
+					"iptables --version || exit 1\n" +
+					"# Create the droidwall chain if necessary\n" +
+					"iptables -L droidwall 2>/dev/null || iptables --new droidwall || exit 2\n" +
+					"# Add droidwall chain to OUTPUT chain if necessary\n" +
+					"iptables -L OUTPUT | grep -q droidwall || iptables -A OUTPUT -j droidwall || exit 3" +
+					"# Flush existing rules\n" +
+					"iptables -F droidwall || exit 4" +
+			"");
 			final String targetRule = (whitelist ? "ACCEPT" : "REJECT");
 			final boolean any_3g = uids3g.indexOf(SPECIAL_UID_ANY) >= 0;
 			final boolean any_wifi = uidsWifi.indexOf(SPECIAL_UID_ANY) >= 0;
@@ -118,13 +130,13 @@ public final class Api {
 				int uid = android.os.Process.getUidForName("dhcp");
 				if (uid != -1) {
 					for (final String itf : ITFS_WIFI) {
-						script.append("iptables -A OUTPUT -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ACCEPT || exit\n");
+						script.append("iptables -A droidwall -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ACCEPT || exit\n");
 					}
 				}
 				uid = android.os.Process.getUidForName("wifi");
 				if (uid != -1) {
 					for (final String itf : ITFS_WIFI) {
-						script.append("iptables -A OUTPUT -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ACCEPT || exit\n");
+						script.append("iptables -A droidwall -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ACCEPT || exit\n");
 					}
 				}
 			}
@@ -132,14 +144,14 @@ public final class Api {
 				if (blacklist) {
 					/* block any application on this interface */
 					for (final String itf : ITFS_3G) {
-						script.append("iptables -A OUTPUT -o ").append(itf).append(" -j ").append(targetRule).append(" || exit\n");
+						script.append("iptables -A droidwall -o ").append(itf).append(" -j ").append(targetRule).append(" || exit\n");
 					}
 				}
 			} else {
 				/* release/block individual applications on this interface */
 				for (final Integer uid : uids3g) {
 					for (final String itf : ITFS_3G) {
-						script.append("iptables -A OUTPUT -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
+						script.append("iptables -A droidwall -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
 					}
 				}
 			}
@@ -147,26 +159,26 @@ public final class Api {
 				if (blacklist) {
 					/* block any application on this interface */
 					for (final String itf : ITFS_WIFI) {
-						script.append("iptables -A OUTPUT -o ").append(itf).append(" -j ").append(targetRule).append(" || exit\n");
+						script.append("iptables -A droidwall -o ").append(itf).append(" -j ").append(targetRule).append(" || exit\n");
 					}
 				}
 			} else {
 				/* release/block individual applications on this interface */
 				for (final Integer uid : uidsWifi) {
 					for (final String itf : ITFS_WIFI) {
-						script.append("iptables -A OUTPUT -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
+						script.append("iptables -A droidwall -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
 					}
 				}
 			}
 			if (whitelist) {
 				if (!any_3g) {
 					for (final String itf : ITFS_3G) {
-						script.append("iptables -A OUTPUT -o ").append(itf).append(" -j REJECT || exit\n");
+						script.append("iptables -A droidwall -o ").append(itf).append(" -j REJECT || exit\n");
 					}
 				}
 				if (!any_wifi) {
 					for (final String itf : ITFS_WIFI) {
-						script.append("iptables -A OUTPUT -o ").append(itf).append(" -j REJECT || exit\n");
+						script.append("iptables -A droidwall -o ").append(itf).append(" -j REJECT || exit\n");
 					}
 				}
 			}
@@ -175,19 +187,12 @@ public final class Api {
 			if (showErrors && code != 0) {
 				String msg = res.toString();
 				Log.e("DroidWall", msg);
-				// Search for common error messages
-				if (msg.indexOf("Couldn't find match `owner'") != -1 || msg.indexOf("no chain/target match") != -1) {
-					alert(ctx, "Error applying iptables rules.\nExit code: " + code + "\n\n" +
-						"It seems your Linux kernel was not compiled with the netfilter \"owner\" module enabled, which is required for Droid Wall to work properly.\n\n" +
-						"You should check if there is an updated version of your Android ROM compiled with this kernel module.");
-				} else {
-					// Remove unnecessary help message from output
-					if (msg.indexOf("\nTry `iptables -h' or 'iptables --help' for more information.") != -1) {
-						msg = msg.replace("\nTry `iptables -h' or 'iptables --help' for more information.", "");
-					}
-					// Try `iptables -h' or 'iptables --help' for more information.
-					alert(ctx, "Error applying iptables rules. Exit code: " + code + "\n\n" + msg.trim());
+				// Remove unnecessary help message from output
+				if (msg.indexOf("\nTry `iptables -h' or 'iptables --help' for more information.") != -1) {
+					msg = msg.replace("\nTry `iptables -h' or 'iptables --help' for more information.", "");
 				}
+				// Try `iptables -h' or 'iptables --help' for more information.
+				alert(ctx, "Error applying iptables rules. Exit code: " + code + "\n\n" + msg.trim());
 			} else {
 				return true;
 			}
@@ -289,8 +294,10 @@ public final class Api {
 	public static boolean purgeIptables(Context ctx, boolean showErrors) {
     	StringBuilder res = new StringBuilder();
 		try {
-			int code = runScriptAsRoot(ctx, "iptables -F || exit\n", res);
-			if (code != 0) {
+			assertBinaries(ctx, showErrors);
+			int code = runScriptAsRoot(ctx, "export PATH=" + ctx.getCacheDir() + ":$PATH\n" +
+											"iptables -F droidwall\n", res);
+			if (code == -1) {
 				if (showErrors) alert(ctx, "error purging iptables. exit code: " + code + "\n" + res);
 				return false;
 			}
@@ -308,7 +315,8 @@ public final class Api {
 	public static void showIptablesRules(Context ctx) {
 		try {
     		final StringBuilder res = new StringBuilder();
-			runScriptAsRoot(ctx, "iptables -L\n", res);
+			runScriptAsRoot(ctx, "export PATH=" + ctx.getCacheDir() + ":$PATH\n" +
+								 "iptables -L -v\n", res);
 			alert(ctx, res);
 		} catch (Exception e) {
 			alert(ctx, "error: " + e);
@@ -492,6 +500,37 @@ public final class Api {
 		} catch (InterruptedException ex) {}
 		return runner.exitcode;
     }
+	/**
+	 * Asserts that the binary files are installed in the cache directory.
+	 * @param ctx context
+     * @param showErrors indicates if errors should be alerted
+	 * @return false if the binary files could not be installed
+	 */
+	public static boolean assertBinaries(Context ctx, boolean showErrors) {
+		final File file = new File(ctx.getCacheDir(), "iptables");
+		if (!file.exists()) {
+			try {
+				final String abspath = file.getAbsolutePath();
+				// Write the iptables binary
+				final FileOutputStream out = new FileOutputStream(file);
+				final InputStream is = ctx.getResources().openRawResource(R.raw.iptables);
+				byte buf[] = new byte[1024];
+				int len;
+				while ((len = is.read(buf)) > 0) {
+					out.write(buf, 0, len);
+				}
+				out.close();
+				is.close();
+				// make sure we have execution permission
+				Runtime.getRuntime().exec("chmod 755 "+abspath).waitFor();
+				Toast.makeText(ctx, R.string.toast_bin_installed, Toast.LENGTH_LONG).show();
+			} catch (Exception e) {
+				if (showErrors) alert(ctx, "Error installing binary files: " + e);
+				return false;
+			}
+		}
+		return true;
+	}
     /**
      * Runs a script as root (multiple commands separated by "\n") with a default timeout of 20 seconds.
 	 * @param ctx mandatory context
