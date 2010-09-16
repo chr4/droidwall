@@ -52,7 +52,7 @@ import android.widget.Toast;
  */
 public final class Api {
 	/** application version string */
-	public static final String VERSION = "1.4.1";
+	public static final String VERSION = "1.4.2-dev";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
 	/** root script filename */
@@ -99,17 +99,11 @@ public final class Api {
 	private static String scriptHeader(Context ctx) {
 		final String dir = ctx.getCacheDir().getAbsolutePath();
 		return "" +
-			"if [ \"$IPTABLES\" = \"\" ] ; then\n" +
-			"  " + dir + "/iptables_g1 --version >/dev/null 2>/dev/null && export IPTABLES="+dir+"/iptables_g1\n" +
-			"fi\n" +
-			"if [ \"$IPTABLES\" = \"\" ] ; then\n" +
-			"  " + dir + "/iptables_n1 --version >/dev/null 2>/dev/null && export IPTABLES="+dir+"/iptables_n1\n" +
-			"fi\n" +
-			"if [ \"$IPTABLES\" = \"\" ] ; then\n" +
-			"  export IPTABLES=`which iptables`\n" +
-			"fi\n" +
-			"if [ \"$IPTABLES\" = \"\" ] ; then\n" +
-			"  export IPTABLES=iptables\n" +
+			"export IPTABLES=iptables\n" +
+			"if " + dir + "/iptables_g1 --version >/dev/null 2>/dev/null ; then\n" +
+			"	export IPTABLES="+dir+"/iptables_g1\n" +
+			"elif " + dir + "/iptables_n1 --version >/dev/null 2>/dev/null ; then\n" +
+			"	export IPTABLES="+dir+"/iptables_n1\n" +
 			"fi\n" +
 			"";
 	}
@@ -165,9 +159,9 @@ public final class Api {
 					"# Create the droidwall chain if necessary\n" +
 					"$IPTABLES -L droidwall 2>/dev/null || $IPTABLES --new droidwall || exit 2\n" +
 					"# Add droidwall chain to OUTPUT chain if necessary\n" +
-					"$IPTABLES -L OUTPUT | grep -q droidwall || $IPTABLES -A OUTPUT -j droidwall || exit 3" +
+					"$IPTABLES -L OUTPUT | grep -q droidwall || $IPTABLES -A OUTPUT -j droidwall || exit 3\n" +
 					"# Flush existing rules\n" +
-					"$IPTABLES -F droidwall || exit 4" +
+					"$IPTABLES -F droidwall || exit 4\n" +
 			"");
 			final String targetRule = (whitelist ? "RETURN" : "REJECT");
 			final boolean any_3g = uids3g.indexOf(SPECIAL_UID_ANY) >= 0;
