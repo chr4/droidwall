@@ -23,12 +23,14 @@
 
 package com.googlecode.droidwall;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -65,6 +67,7 @@ public final class Api {
 	public static final String PREF_PASSWORD 	= "Password";
 	public static final String PREF_MODE 		= "BlockMode";
 	public static final String PREF_ENABLED		= "Enabled";
+	public static final String PREF_LOGENABLED	= "LogEnabled";
 	// Modes
 	public static final String MODE_WHITELIST = "whitelist";
 	public static final String MODE_BLACKLIST = "blacklist";
@@ -99,6 +102,14 @@ public final class Api {
 	private static String scriptHeader(Context ctx) {
 		final String dir = ctx.getCacheDir().getAbsolutePath();
 		return "" +
+			"if ! echo -n 1 >/dev/null ; then\n" +
+			"	echo The 'echo' command is required. Droid Wall will not work.\n" +
+			"	exit 1\n" +
+			"fi\n" +
+			"if ! echo -n 1 | grep -q 1 ; then\n" +
+			"	echo The 'grep' command is required. Droid Wall will not work.\n" +
+			"	exit 1\n" +
+			"fi\n" +
 			"export IPTABLES=iptables\n" +
 			"if " + dir + "/iptables_g1 --version >/dev/null 2>/dev/null ; then\n" +
 			"	export IPTABLES="+dir+"/iptables_g1\n" +
@@ -145,7 +156,7 @@ public final class Api {
 		}
 		assertBinaries(ctx, showErrors);
 		final String ITFS_WIFI[] = {"tiwlan+","eth+"};
-		final String ITFS_3G[] = {"rmnet+","pdp+","ppp+"};
+		final String ITFS_3G[] = {"rmnet+","pdp+","ppp+","uwbr+"};
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		final boolean whitelist = prefs.getString(PREF_MODE, MODE_WHITELIST).equals(MODE_WHITELIST);
 		final boolean blacklist = !whitelist;
@@ -155,15 +166,32 @@ public final class Api {
 			int code;
 			script.append(scriptHeader(ctx));
 			script.append("" +
-					"$IPTABLES --version || exit 1\n" +
-					"# Create the droidwall chain if necessary\n" +
-					"$IPTABLES -L droidwall 2>/dev/null || $IPTABLES --new droidwall || exit 2\n" +
-					"# Add droidwall chain to OUTPUT chain if necessary\n" +
-					"$IPTABLES -L OUTPUT | grep -q droidwall || $IPTABLES -A OUTPUT -j droidwall || exit 3\n" +
-					"# Flush existing rules\n" +
-					"$IPTABLES -F droidwall || exit 4\n" +
+				"$IPTABLES --version || exit 1\n" +
+				"# Create the droidwall chain if necessary\n" +
+				"$IPTABLES -L droidwall 2>/dev/null || $IPTABLES --new droidwall || exit 2\n" +
+				"# Create the droidwall-reject chain if necessary\n" +
+				"$IPTABLES -L droidwall-reject 2>/dev/null || $IPTABLES --new droidwall-reject || exit 2\n" +
+				"# Add droidwall chain to OUTPUT chain if necessary\n" +
+				"$IPTABLES -L OUTPUT | grep -q droidwall || $IPTABLES -A OUTPUT -j droidwall || exit 3\n" +
+				"# Flush existing rules\n" +
+				"$IPTABLES -F droidwall || exit 4\n" +
+				"$IPTABLES -F droidwall-reject || exit 5\n" +
 			"");
-			final String targetRule = (whitelist ? "RETURN" : "REJECT");
+			// Check if logging is enabled
+			if (ctx.getSharedPreferences(PREFS_NAME, 0).getBoolean(PREF_LOGENABLED, false)) {
+				script.append("" +
+					"# Create the log and reject rules (ignore errors on the LOG target just in case it is not available)\n" +
+					"$IPTABLES -A droidwall-reject -j LOG --log-prefix \"[DROIDWALL] \" --log-uid\n" +
+					"$IPTABLES -A droidwall-reject -j REJECT || exit 6\n" +
+				"");
+			} else {
+				script.append("" +
+					"# Create the reject rule (log disabled)\n" +
+					"$IPTABLES -A droidwall-reject -j REJECT || exit 6\n" +
+				"");
+			}
+			//
+			final String targetRule = (whitelist ? "RETURN" : "droidwall-reject");
 			final boolean any_3g = uids3g.indexOf(SPECIAL_UID_ANY) >= 0;
 			final boolean any_wifi = uidsWifi.indexOf(SPECIAL_UID_ANY) >= 0;
 			if (whitelist && !any_wifi) {
@@ -214,12 +242,12 @@ public final class Api {
 			if (whitelist) {
 				if (!any_3g) {
 					for (final String itf : ITFS_3G) {
-						script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -j REJECT || exit\n");
+						script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -j droidwall-reject || exit\n");
 					}
 				}
 				if (!any_wifi) {
 					for (final String itf : ITFS_WIFI) {
-						script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -j REJECT || exit\n");
+						script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -j droidwall-reject || exit\n");
 					}
 				}
 			}
@@ -359,6 +387,74 @@ public final class Api {
 			runScriptAsRoot(ctx, scriptHeader(ctx) +
 								 "echo $IPTABLES\n" +
 								 "$IPTABLES -L -v\n", res);
+			alert(ctx, res);
+		} catch (Exception e) {
+			alert(ctx, "error: " + e);
+		}
+	}
+
+	/**
+	 * Display logs
+	 * @param ctx application context
+	 */
+	public static void clearLog(Context ctx) {
+		try {
+			final StringBuilder res = new StringBuilder();
+			int code = runScriptAsRoot(ctx, "dmesg -c >/dev/null || exit\n", res);
+			if (code != 0) {
+				alert(ctx, res);
+				return;
+			}
+		} catch (Exception e) {
+			alert(ctx, "error: " + e);
+		}
+	}
+	/**
+	 * Display logs
+	 * @param ctx application context
+	 */
+	public static void showLog(Context ctx) {
+		try {
+    		StringBuilder res = new StringBuilder();
+			int code = runScript(ctx, "dmesg | grep [DROIDWALL]\n", res);
+			if (code != 0) {
+				alert(ctx, res);
+				return;
+			}
+			BufferedReader r = new BufferedReader(new StringReader(res.toString()));
+			res = new StringBuilder();
+			String line;
+			int start, end;
+			Integer appid;
+			HashMap<Integer, Integer> map = new HashMap<Integer, Integer>();
+			while ((line = r.readLine()) != null) {
+				start = line.indexOf("UID=");
+				if (start == -1) continue;
+				start += 4;
+				end = line.indexOf(" ", start);
+				if (end == -1) continue;
+				appid = Integer.parseInt(line.substring(start, end));
+				if (map.containsKey(appid)) {
+					map.put(appid, map.get(appid) + 1);
+				} else {
+					map.put(appid, 1);
+				}
+			}
+			final DroidApp[] apps = getApps(ctx);
+			for (Integer id : map.keySet()) {
+				res.append("App ID ").append(id);
+				for (DroidApp app : apps) {
+					if (app.uid == id) {
+						res.append(" (").append(app.names[0]);
+						if (app.names.length > 1) {
+							res.append(", ...)");
+						} else {
+							res.append(")");
+						}
+					}
+				}
+				res.append(" - blocked ").append(map.get(id)).append(" packets.\n");
+			}
 			alert(ctx, res);
 		} catch (Exception e) {
 			alert(ctx, "error: " + e);
@@ -515,16 +611,16 @@ public final class Api {
 		return false;
 	}
     /**
-     * Runs a script as root (multiple commands separated by "\n").
+     * Runs a script, wither as root or as a regular user (multiple commands separated by "\n").
 	 * @param ctx mandatory context
      * @param script the script to be executed
      * @param res the script output response (stdout + stderr)
      * @param timeout timeout in milliseconds (-1 for none)
      * @return the script exit code
      */
-	public static int runScriptAsRoot(Context ctx, String script, StringBuilder res, final long timeout) {
+	public static int runScript(Context ctx, String script, StringBuilder res, long timeout, boolean asroot) {
 		final File file = new File(ctx.getCacheDir(), SCRIPT_FILE);
-		final ScriptRunner runner = new ScriptRunner(file, script, res);
+		final ScriptRunner runner = new ScriptRunner(file, script, res, asroot);
 		runner.start();
 		try {
 			if (timeout > 0) {
@@ -541,7 +637,42 @@ public final class Api {
 			}
 		} catch (InterruptedException ex) {}
 		return runner.exitcode;
+	}
+    /**
+     * Runs a script as root (multiple commands separated by "\n").
+	 * @param ctx mandatory context
+     * @param script the script to be executed
+     * @param res the script output response (stdout + stderr)
+     * @param timeout timeout in milliseconds (-1 for none)
+     * @return the script exit code
+     */
+	public static int runScriptAsRoot(Context ctx, String script, StringBuilder res, long timeout) {
+		return runScript(ctx, script, res, timeout, true);
     }
+    /**
+     * Runs a script as root (multiple commands separated by "\n") with a default timeout of 20 seconds.
+	 * @param ctx mandatory context
+     * @param script the script to be executed
+     * @param res the script output response (stdout + stderr)
+     * @param timeout timeout in milliseconds (-1 for none)
+     * @return the script exit code
+     * @throws IOException on any error executing the script, or writing it to disk
+     */
+	public static int runScriptAsRoot(Context ctx, String script, StringBuilder res) throws IOException {
+		return runScriptAsRoot(ctx, script, res, 40000);
+	}
+    /**
+     * Runs a script as a regular user (multiple commands separated by "\n") with a default timeout of 20 seconds.
+	 * @param ctx mandatory context
+     * @param script the script to be executed
+     * @param res the script output response (stdout + stderr)
+     * @param timeout timeout in milliseconds (-1 for none)
+     * @return the script exit code
+     * @throws IOException on any error executing the script, or writing it to disk
+     */
+	public static int runScript(Context ctx, String script, StringBuilder res) throws IOException {
+		return runScript(ctx, script, res, 40000, false);
+	}
 	/**
 	 * Asserts that the binary files are installed in the cache directory.
 	 * @param ctx context
@@ -572,19 +703,6 @@ public final class Api {
 		}
 		return true;
 	}
-    /**
-     * Runs a script as root (multiple commands separated by "\n") with a default timeout of 20 seconds.
-	 * @param ctx mandatory context
-     * @param script the script to be executed
-     * @param res the script output response (stdout + stderr)
-     * @param timeout timeout in milliseconds (-1 for none)
-     * @return the script exit code
-     * @throws IOException on any error executing the script, or writing it to disk
-     */
-	public static int runScriptAsRoot(Context ctx, String script, StringBuilder res) throws IOException {
-		return runScriptAsRoot(ctx, script, res, 40000);
-	}
-
 	/**
 	 * Check if the firewall is enabled
 	 * @param ctx mandatory context
@@ -657,12 +775,13 @@ public final class Api {
     	}
     }
 	/**
-	 * Internal thread used to execute scripts as root.
+	 * Internal thread used to execute scripts (as root or not).
 	 */
 	private static final class ScriptRunner extends Thread {
 		private final File file;
 		private final String script;
 		private final StringBuilder res;
+		private final boolean asroot;
 		public int exitcode = -1;
 		private Process exec;
 		
@@ -671,11 +790,13 @@ public final class Api {
 		 * @param file temporary script file
 		 * @param script script to run
 		 * @param res response output
+		 * @param asroot if true, executes the script as root
 		 */
-		public ScriptRunner(File file, String script, StringBuilder res) {
+		public ScriptRunner(File file, String script, StringBuilder res, boolean asroot) {
 			this.file = file;
 			this.script = script;
 			this.res = res;
+			this.asroot = asroot;
 		}
 		@Override
 		public void run() {
@@ -689,9 +810,15 @@ public final class Api {
 				out.write(script);
 				if (!script.endsWith("\n")) out.write("\n");
 				out.write("exit\n");
+				out.flush();
 				out.close();
-				// Create the "su" request to run the script
-				exec = Runtime.getRuntime().exec("su -c "+abspath);
+				if (this.asroot) {
+					// Create the "su" request to run the script
+					exec = Runtime.getRuntime().exec("su -c "+abspath);
+				} else {
+					// Create the "sh" request to run the script
+					exec = Runtime.getRuntime().exec("sh "+abspath);
+				}
 				InputStreamReader r = new InputStreamReader(exec.getInputStream());
 				final char buf[] = new char[1024];
 				int read = 0;

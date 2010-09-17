@@ -60,10 +60,13 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	
 	// Menu options
 	private static final int MENU_DISABLE	= 0;
-	private static final int MENU_SHOWRULES	= 1;
+	private static final int MENU_TOGGLELOG	= 1;
 	private static final int MENU_APPLY		= 2;
-	private static final int MENU_SETPWD	= 3;
+	private static final int MENU_SHOWRULES	= 3;
 	private static final int MENU_HELP		= 4;
+	private static final int MENU_SHOWLOG	= 5;
+	private static final int MENU_CLEARLOG	= 6;
+	private static final int MENU_SETPWD	= 7;
 	
 	/** progress dialog instance */
 	private ProgressDialog progress = null;
@@ -191,6 +194,20 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		}).show();
 	}
 	/**
+	 * Toggle iptables log enabled/disabled
+	 */
+	private void toggleLogEnabled() {
+		final SharedPreferences prefs = getSharedPreferences(Api.PREFS_NAME, 0);
+		final boolean enabled = !prefs.getBoolean(Api.PREF_LOGENABLED, false);
+		final Editor editor = prefs.edit();
+		editor.putBoolean(Api.PREF_LOGENABLED, enabled);
+		editor.commit();
+		if (Api.isEnabled(this)) {
+			Api.applySavedIptablesRules(this, true);
+		}
+		Toast.makeText(MainActivity.this, "Log has been "+(enabled?"enabled.":"disabled."), Toast.LENGTH_SHORT).show();
+	}
+	/**
 	 * If the applications are cached, just show them, otherwise load and show
 	 */
 	private void showOrLoadApplications() {
@@ -264,11 +281,15 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-    	menu.add(0, MENU_DISABLE, 0, R.string.disable_fw).setIcon(android.R.drawable.button_onoff_indicator_on);
-    	menu.add(0, MENU_SHOWRULES, 0, R.string.showrules).setIcon(R.drawable.show);
+    	menu.add(0, MENU_DISABLE, 0, R.string.fw_enabled).setIcon(android.R.drawable.button_onoff_indicator_on);
+    	menu.add(0, MENU_TOGGLELOG, 0, R.string.log_enabled).setIcon(android.R.drawable.button_onoff_indicator_on);
     	menu.add(0, MENU_APPLY, 0, R.string.applyrules).setIcon(R.drawable.apply);
-    	menu.add(0, MENU_SETPWD, 0, R.string.setpwd).setIcon(android.R.drawable.ic_lock_lock);
+    	menu.add(0, MENU_SHOWRULES, 0, R.string.showrules).setIcon(R.drawable.show);
     	menu.add(0, MENU_HELP, 0, R.string.help).setIcon(android.R.drawable.ic_menu_help);
+    	menu.add(0, MENU_SHOWLOG, 0, R.string.show_log).setIcon(R.drawable.show);
+    	menu.add(0, MENU_CLEARLOG, 0, R.string.clear_log).setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+    	menu.add(0, MENU_SETPWD, 0, R.string.setpwd).setIcon(android.R.drawable.ic_lock_lock);
+    	
     	return true;
     }
     @Override
@@ -278,12 +299,21 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     	final boolean enabled = Api.isEnabled(this);
     	if (enabled) {
     		item_onoff.setIcon(android.R.drawable.button_onoff_indicator_on);
-    		item_onoff.setTitle(R.string.disable_fw);
+    		item_onoff.setTitle(R.string.fw_enabled);
     		item_apply.setTitle(R.string.applyrules);
     	} else {
     		item_onoff.setIcon(android.R.drawable.button_onoff_indicator_off);
-    		item_onoff.setTitle(R.string.enable_fw);
+    		item_onoff.setTitle(R.string.fw_disabled);
     		item_apply.setTitle(R.string.saverules);
+    	}
+    	final MenuItem item_log = menu.getItem(MENU_TOGGLELOG);
+    	final boolean logenabled = getSharedPreferences(Api.PREFS_NAME, 0).getBoolean(Api.PREF_LOGENABLED, false);
+    	if (logenabled) {
+    		item_log.setIcon(android.R.drawable.button_onoff_indicator_on);
+    		item_log.setTitle(R.string.log_enabled);
+    	} else {
+    		item_log.setIcon(android.R.drawable.button_onoff_indicator_off);
+    		item_log.setTitle(R.string.log_disabled);
     	}
     	return super.onPrepareOptionsMenu(menu);
     }
@@ -304,6 +334,15 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     		return true;
     	case MENU_HELP:
     		new HelpDialog(this).show();
+    		return true;
+    	case MENU_TOGGLELOG:
+    		toggleLogEnabled();
+    		return true;
+    	case MENU_CLEARLOG:
+    		clearLog();
+    		return true;
+    	case MENU_SHOWLOG:
+    		showLog();
     		return true;
     	}
     	return false;
@@ -346,6 +385,35 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 				if (progress != null) progress.dismiss();
 				if (!Api.hasRootAccess(MainActivity.this, true)) return;
 				Api.showIptablesRules(MainActivity.this);
+			}
+		};
+		handler.sendEmptyMessageDelayed(0, 100);
+	}
+	/**
+	 * Show logs on a dialog
+	 */
+	private void showLog() {
+		final Handler handler;
+		progress = ProgressDialog.show(this, "Working...", "Please wait", true);
+		handler = new Handler() {
+			public void handleMessage(Message msg) {
+				if (progress != null) progress.dismiss();
+				Api.showLog(MainActivity.this);
+			}
+		};
+		handler.sendEmptyMessageDelayed(0, 100);
+	}
+	/**
+	 * Clear logs
+	 */
+	private void clearLog() {
+		final Handler handler;
+		progress = ProgressDialog.show(this, "Working...", "Please wait", true);
+		handler = new Handler() {
+			public void handleMessage(Message msg) {
+				if (progress != null) progress.dismiss();
+				if (!Api.hasRootAccess(MainActivity.this, true)) return;
+				Api.clearLog(MainActivity.this);
 			}
 		};
 		handler.sendEmptyMessageDelayed(0, 100);
