@@ -164,10 +164,10 @@ public final class Api {
 			script.append("" +
 				"$IPTABLES --version || exit 1\n" +
 				"# Create the droidwall chains if necessary\n" +
-				"$IPTABLES -L droidwall 2>/dev/null || $IPTABLES --new droidwall || exit 2\n" +
-				"$IPTABLES -L droidwall-3g 2>/dev/null || $IPTABLES --new droidwall-3g || exit 3\n" +
-				"$IPTABLES -L droidwall-wifi 2>/dev/null || $IPTABLES --new droidwall-wifi || exit 4\n" +
-				"$IPTABLES -L droidwall-reject 2>/dev/null || $IPTABLES --new droidwall-reject || exit 5\n" +
+				"$IPTABLES -L droidwall >/dev/null 2>/dev/null || $IPTABLES --new droidwall || exit 2\n" +
+				"$IPTABLES -L droidwall-3g >/dev/null 2>/dev/null || $IPTABLES --new droidwall-3g || exit 3\n" +
+				"$IPTABLES -L droidwall-wifi >/dev/null 2>/dev/null || $IPTABLES --new droidwall-wifi || exit 4\n" +
+				"$IPTABLES -L droidwall-reject >/dev/null 2>/dev/null || $IPTABLES --new droidwall-reject || exit 5\n" +
 				"# Add droidwall chain to OUTPUT chain if necessary\n" +
 				"$IPTABLES -L OUTPUT | grep -q droidwall || $IPTABLES -A OUTPUT -j droidwall || exit 6\n" +
 				"# Flush existing rules\n" +
@@ -201,13 +201,15 @@ public final class Api {
 			final boolean any_3g = uids3g.indexOf(SPECIAL_UID_ANY) >= 0;
 			final boolean any_wifi = uidsWifi.indexOf(SPECIAL_UID_ANY) >= 0;
 			if (whitelist && !any_wifi) {
-				// When "white listing" wifi, we need ensure that the dhcp and wifi users are allowed
+				// When "white listing" wifi, we need to ensure that the dhcp and wifi users are allowed
 				int uid = android.os.Process.getUidForName("dhcp");
 				if (uid != -1) {
+					script.append("# dhcp user\n");
 					script.append("$IPTABLES -A droidwall-wifi -m owner --uid-owner ").append(uid).append(" -j RETURN || exit\n");
 				}
 				uid = android.os.Process.getUidForName("wifi");
 				if (uid != -1) {
+					script.append("# wifi user\n");
 					script.append("$IPTABLES -A droidwall-wifi -m owner --uid-owner ").append(uid).append(" -j RETURN || exit\n");
 				}
 			}
