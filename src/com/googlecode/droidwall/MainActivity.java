@@ -413,7 +413,9 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
 				if (!Api.hasRootAccess(MainActivity.this, true)) return;
-				Api.clearLog(MainActivity.this);
+				if (Api.clearLog(MainActivity.this)) {
+					Toast.makeText(MainActivity.this, "Logs cleared", Toast.LENGTH_SHORT).show();
+				}
 			}
 		};
 		handler.sendEmptyMessageDelayed(0, 100);

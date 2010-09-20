@@ -102,12 +102,8 @@ public final class Api {
 	private static String scriptHeader(Context ctx) {
 		final String dir = ctx.getCacheDir().getAbsolutePath();
 		return "" +
-			"if ! echo -n 1 >/dev/null ; then\n" +
-			"	echo The 'echo' command is required. Droid Wall will not work.\n" +
-			"	exit 1\n" +
-			"fi\n" +
-			"if ! echo -n 1 | grep -q 1 ; then\n" +
-			"	echo The 'grep' command is required. Droid Wall will not work.\n" +
+			"if ! echo 1 | grep -q 1 ; then\n" +
+			"	echo The grep command is required. Droid Wall will not work.\n" +
 			"	exit 1\n" +
 			"fi\n" +
 			"export IPTABLES=iptables\n" +
@@ -167,30 +163,40 @@ public final class Api {
 			script.append(scriptHeader(ctx));
 			script.append("" +
 				"$IPTABLES --version || exit 1\n" +
-				"# Create the droidwall chain if necessary\n" +
+				"# Create the droidwall chains if necessary\n" +
 				"$IPTABLES -L droidwall 2>/dev/null || $IPTABLES --new droidwall || exit 2\n" +
-				"# Create the droidwall-reject chain if necessary\n" +
-				"$IPTABLES -L droidwall-reject 2>/dev/null || $IPTABLES --new droidwall-reject || exit 2\n" +
+				"$IPTABLES -L droidwall-3g 2>/dev/null || $IPTABLES --new droidwall-3g || exit 3\n" +
+				"$IPTABLES -L droidwall-wifi 2>/dev/null || $IPTABLES --new droidwall-wifi || exit 4\n" +
+				"$IPTABLES -L droidwall-reject 2>/dev/null || $IPTABLES --new droidwall-reject || exit 5\n" +
 				"# Add droidwall chain to OUTPUT chain if necessary\n" +
-				"$IPTABLES -L OUTPUT | grep -q droidwall || $IPTABLES -A OUTPUT -j droidwall || exit 3\n" +
+				"$IPTABLES -L OUTPUT | grep -q droidwall || $IPTABLES -A OUTPUT -j droidwall || exit 6\n" +
 				"# Flush existing rules\n" +
-				"$IPTABLES -F droidwall || exit 4\n" +
-				"$IPTABLES -F droidwall-reject || exit 5\n" +
+				"$IPTABLES -F droidwall || exit 7\n" +
+				"$IPTABLES -F droidwall-3g || exit 8\n" +
+				"$IPTABLES -F droidwall-wifi || exit 9\n" +
+				"$IPTABLES -F droidwall-reject || exit 10\n" +
 			"");
 			// Check if logging is enabled
 			if (ctx.getSharedPreferences(PREFS_NAME, 0).getBoolean(PREF_LOGENABLED, false)) {
 				script.append("" +
 					"# Create the log and reject rules (ignore errors on the LOG target just in case it is not available)\n" +
 					"$IPTABLES -A droidwall-reject -j LOG --log-prefix \"[DROIDWALL] \" --log-uid\n" +
-					"$IPTABLES -A droidwall-reject -j REJECT || exit 6\n" +
+					"$IPTABLES -A droidwall-reject -j REJECT || exit 11\n" +
 				"");
 			} else {
 				script.append("" +
 					"# Create the reject rule (log disabled)\n" +
-					"$IPTABLES -A droidwall-reject -j REJECT || exit 6\n" +
+					"$IPTABLES -A droidwall-reject -j REJECT || exit 11\n" +
 				"");
 			}
-			//
+			script.append("# Main rules (per interface)\n");
+			for (final String itf : ITFS_3G) {
+				script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -j droidwall-3g || exit\n");
+			}
+			for (final String itf : ITFS_WIFI) {
+				script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -j droidwall-wifi || exit\n");
+			}
+			
 			final String targetRule = (whitelist ? "RETURN" : "droidwall-reject");
 			final boolean any_3g = uids3g.indexOf(SPECIAL_UID_ANY) >= 0;
 			final boolean any_wifi = uidsWifi.indexOf(SPECIAL_UID_ANY) >= 0;
@@ -198,57 +204,41 @@ public final class Api {
 				// When "white listing" wifi, we need ensure that the dhcp and wifi users are allowed
 				int uid = android.os.Process.getUidForName("dhcp");
 				if (uid != -1) {
-					for (final String itf : ITFS_WIFI) {
-						script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j RETURN || exit\n");
-					}
+					script.append("$IPTABLES -A droidwall-wifi -m owner --uid-owner ").append(uid).append(" -j RETURN || exit\n");
 				}
 				uid = android.os.Process.getUidForName("wifi");
 				if (uid != -1) {
-					for (final String itf : ITFS_WIFI) {
-						script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j RETURN || exit\n");
-					}
+					script.append("$IPTABLES -A droidwall-wifi -m owner --uid-owner ").append(uid).append(" -j RETURN || exit\n");
 				}
 			}
 			if (any_3g) {
 				if (blacklist) {
 					/* block any application on this interface */
-					for (final String itf : ITFS_3G) {
-						script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -j ").append(targetRule).append(" || exit\n");
-					}
+					script.append("$IPTABLES -A droidwall-3g -j ").append(targetRule).append(" || exit\n");
 				}
 			} else {
 				/* release/block individual applications on this interface */
 				for (final Integer uid : uids3g) {
-					for (final String itf : ITFS_3G) {
-						script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
-					}
+					script.append("$IPTABLES -A droidwall-3g -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
 				}
 			}
 			if (any_wifi) {
 				if (blacklist) {
 					/* block any application on this interface */
-					for (final String itf : ITFS_WIFI) {
-						script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -j ").append(targetRule).append(" || exit\n");
-					}
+					script.append("$IPTABLES -A droidwall-wifi -j ").append(targetRule).append(" || exit\n");
 				}
 			} else {
 				/* release/block individual applications on this interface */
 				for (final Integer uid : uidsWifi) {
-					for (final String itf : ITFS_WIFI) {
-						script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
-					}
+					script.append("$IPTABLES -A droidwall-wifi -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
 				}
 			}
 			if (whitelist) {
 				if (!any_3g) {
-					for (final String itf : ITFS_3G) {
-						script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -j droidwall-reject || exit\n");
-					}
+					script.append("$IPTABLES -A droidwall-3g -j droidwall-reject || exit\n");
 				}
 				if (!any_wifi) {
-					for (final String itf : ITFS_WIFI) {
-						script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -j droidwall-reject || exit\n");
-					}
+					script.append("$IPTABLES -A droidwall-wifi -j droidwall-reject || exit\n");
 				}
 			}
 	    	final StringBuilder res = new StringBuilder();
@@ -260,7 +250,6 @@ public final class Api {
 				if (msg.indexOf("\nTry `iptables -h' or 'iptables --help' for more information.") != -1) {
 					msg = msg.replace("\nTry `iptables -h' or 'iptables --help' for more information.", "");
 				}
-				// Try `iptables -h' or 'iptables --help' for more information.
 				alert(ctx, "Error applying iptables rules. Exit code: " + code + "\n\n" + msg.trim());
 			} else {
 				return true;
@@ -365,7 +354,10 @@ public final class Api {
 		try {
 			assertBinaries(ctx, showErrors);
 			int code = runScriptAsRoot(ctx, scriptHeader(ctx) +
-											"$IPTABLES -F droidwall\n", res);
+					"$IPTABLES -F droidwall\n" +
+					"$IPTABLES -F droidwall-reject\n" +
+					"$IPTABLES -F droidwall-3g\n" +
+					"$IPTABLES -F droidwall-wifi\n", res);
 			if (code == -1) {
 				if (showErrors) alert(ctx, "error purging iptables. exit code: " + code + "\n" + res);
 				return false;
@@ -396,18 +388,21 @@ public final class Api {
 	/**
 	 * Display logs
 	 * @param ctx application context
+     * @return true if the clogs were cleared
 	 */
-	public static void clearLog(Context ctx) {
+	public static boolean clearLog(Context ctx) {
 		try {
 			final StringBuilder res = new StringBuilder();
 			int code = runScriptAsRoot(ctx, "dmesg -c >/dev/null || exit\n", res);
 			if (code != 0) {
 				alert(ctx, res);
-				return;
+				return false;
 			}
+			return true;
 		} catch (Exception e) {
 			alert(ctx, "error: " + e);
 		}
+		return false;
 	}
 	/**
 	 * Display logs
@@ -418,6 +413,9 @@ public final class Api {
     		StringBuilder res = new StringBuilder();
 			int code = runScript(ctx, "dmesg | grep [DROIDWALL]\n", res);
 			if (code != 0) {
+				if (res.length() == 0) {
+					res.append("Log is empty");
+				}
 				alert(ctx, res);
 				return;
 			}
