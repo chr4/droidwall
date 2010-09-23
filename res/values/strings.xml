@@ -28,21 +28,23 @@
 		\n<i>Droid Wall - Android Firewall</i> is a front-end application for the powerful <b>iptables</b> Linux firewall.
 		It allows you to restrict which applications are permitted to access your data networks.
 		\nThis is the perfect solution if you don\'t have an unlimited data plan, or just wants to see your battery lasting longer.
+		\n
 		\n<b>Using Droid Wall:</b>
 		\n<b>1.</b> Click on <b>Mode</b> to switch between <i>White List</i> and <i>Black List</i> modes.
 		\n<b>2.</b> Mark the applications that you want to block or allow (depending on the selected mode), for each interface.
-		\n<b>3.</b> Open the menu and click on <b>Enable Firewall</b>.
-		\n<b>Note:</b> After enabling the firewall, the rules will be saved and automatically restored every-time you restart your phone.
+		\n<b>3.</b> Open the menu and enable the firewall. If the firewall is already enabled, just select <b>Apply rules</b>.
+		\nThe rules will be saved and automatically restored when you restart your phone.
+		\nIf want to check all current iptables rules, select <b>Show rules</b> in the menu.
 		\n
-		\n<b>Other features:</b>
-		\nClick on <b>Show rules</b> menu to display current iptables rules output.
+		\n<b>Widget:</b>
+		\nTo quickly enable or disable the firewall, add the Droid Wall widget to your home screen.
 		\n
-		\nClick on <b>Save rules</b> to save your currently selected applications without enabling the firewall.
-		\n
-		\nWhen the firewall is enabled, click on <b>Apply rules</b> to save your currently selected applications and immediately apply the rules.
+		\n<b>Firewall logs:</b>
+		\nIf you want to see which applications have been blocked by Droid Wall, open the menu and enable the Log.
+		\nDroid Wall will then log each application blocked. You can check the log by opening the menu and selecting <b>More -> Show log</b>.
 		\n
 		\n<b>Password lock:</b>
 		\nYou can set a password lock for Droid Wall by using the <b>Set password</b> menu option.
-		To remove the password protection, just reset it to blank.
+		\nTo remove the password protection, just reset it to blank.
 	</string>
 </resources>
