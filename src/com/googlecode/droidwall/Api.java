@@ -102,11 +102,23 @@ public final class Api {
 	private static String scriptHeader(Context ctx) {
 		final String dir = ctx.getCacheDir().getAbsolutePath();
 		return "" +
-			"if ! echo 1 | grep -q 1 ; then\n" +
+			"export IPTABLES=iptables\n" +
+			"export GREP=grep\n" +
+			"# Try to find grep\n" +
+			"if ! echo 1 | $GREP -q 1 >/dev/null 2>/dev/null ; then\n" +
+			"	if which busybox >/dev/null 2>/dev/null ; then\n" +
+			"		export GREP=\"`which busybox` grep\"\n" +
+			"	elif echo 1 | /system/xbin/busybox grep -q 1 >/dev/null 2>/dev/null ; then\n" +
+			"		export GREP=\"/system/xbin/busybox grep\"\n" +
+			"	elif echo 1 | /system/bin/busybox grep -q 1 >/dev/null 2>/dev/null ; then\n" +
+			"		export GREP=\"/system/bin/busybox grep\"\n" +
+			"	fi\n" +
+			"fi\n" +
+			"if ! echo 1 | $GREP -q 1 ; then\n" +
 			"	echo The grep command is required. Droid Wall will not work.\n" +
 			"	exit 1\n" +
 			"fi\n" +
-			"export IPTABLES=iptables\n" +
+			"# Try to find iptables\n" +
 			"if " + dir + "/iptables_g1 --version >/dev/null 2>/dev/null ; then\n" +
 			"	export IPTABLES="+dir+"/iptables_g1\n" +
 			"elif " + dir + "/iptables_n1 --version >/dev/null 2>/dev/null ; then\n" +
@@ -169,7 +181,7 @@ public final class Api {
 				"$IPTABLES -L droidwall-wifi >/dev/null 2>/dev/null || $IPTABLES --new droidwall-wifi || exit 4\n" +
 				"$IPTABLES -L droidwall-reject >/dev/null 2>/dev/null || $IPTABLES --new droidwall-reject || exit 5\n" +
 				"# Add droidwall chain to OUTPUT chain if necessary\n" +
-				"$IPTABLES -L OUTPUT | grep -q droidwall || $IPTABLES -A OUTPUT -j droidwall || exit 6\n" +
+				"$IPTABLES -L OUTPUT | $GREP -q droidwall || $IPTABLES -A OUTPUT -j droidwall || exit 6\n" +
 				"# Flush existing rules\n" +
 				"$IPTABLES -F droidwall || exit 7\n" +
 				"$IPTABLES -F droidwall-3g || exit 8\n" +
@@ -413,7 +425,8 @@ public final class Api {
 	public static void showLog(Context ctx) {
 		try {
     		StringBuilder res = new StringBuilder();
-			int code = runScript(ctx, "dmesg | grep [DROIDWALL]\n", res);
+			int code = runScriptAsRoot(ctx, scriptHeader(ctx) +
+					"dmesg | $GREP [DROIDWALL]\n", res);
 			if (code != 0) {
 				if (res.length() == 0) {
 					res.append("Log is empty");
@@ -454,6 +467,9 @@ public final class Api {
 					}
 				}
 				res.append(" - blocked ").append(map.get(id)).append(" packets.\n");
+			}
+			if (res.length() == 0) {
+				res.append("Log is empty");
 			}
 			alert(ctx, res);
 		} catch (Exception e) {
@@ -807,6 +823,7 @@ public final class Api {
 				Runtime.getRuntime().exec("chmod 777 "+abspath).waitFor();
 				// Write the script to be executed
 				final OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file));
+				out.write("#!/system/bin/sh\n");
 				out.write(script);
 				if (!script.endsWith("\n")) out.write("\n");
 				out.write("exit\n");
