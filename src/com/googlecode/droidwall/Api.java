@@ -102,27 +102,38 @@ public final class Api {
 	private static String scriptHeader(Context ctx) {
 		final String dir = ctx.getCacheDir().getAbsolutePath();
 		return "" +
-			"export IPTABLES=iptables\n" +
-			"export GREP=grep\n" +
-			"# Try to find grep\n" +
-			"if ! echo 1 | $GREP -q 1 >/dev/null 2>/dev/null ; then\n" +
-			"	if which busybox >/dev/null 2>/dev/null ; then\n" +
-			"		export GREP=\"`which busybox` grep\"\n" +
-			"	elif echo 1 | /system/xbin/busybox grep -q 1 >/dev/null 2>/dev/null ; then\n" +
-			"		export GREP=\"/system/xbin/busybox grep\"\n" +
-			"	elif echo 1 | /system/bin/busybox grep -q 1 >/dev/null 2>/dev/null ; then\n" +
-			"		export GREP=\"/system/bin/busybox grep\"\n" +
-			"	fi\n" +
+			"IPTABLES=iptables\n" +
+			"BUSYBOX=busybox\n" +
+			"GREP=grep\n" +
+			"ECHO=echo\n" +
+			"# Try to find busybox\n" +
+			"if " + dir + "/busybox_g1 --help >/dev/null 2>/dev/null ; then\n" +
+			"	BUSYBOX="+dir+"/busybox_g1\n" +
+			"	GREP=\"$BUSYBOX grep\"\n" +
+			"	ECHO=\"$BUSYBOX echo\"\n" +
+			"elif busybox --help >/dev/null 2>/dev/null ; then\n" +
+			"	BUSYBOX=busybox\n" +
+			"elif /system/xbin/busybox --help >/dev/null 2>/dev/null ; then\n" +
+			"	BUSYBOX=/system/xbin/busybox\n" +
+			"elif /system/bin/busybox --help >/dev/null 2>/dev/null ; then\n" +
+			"	BUSYBOX=/system/bin/busybox\n" +
 			"fi\n" +
-			"if ! echo 1 | $GREP -q 1 ; then\n" +
-			"	echo The grep command is required. Droid Wall will not work.\n" +
-			"	exit 1\n" +
+			"# Try to find grep\n" +
+			"if ! $ECHO 1 | $GREP -q 1 >/dev/null 2>/dev/null ; then\n" +
+			"	if $ECHO 1 | $BUSYBOX grep -q 1 >/dev/null 2>/dev/null ; then\n" +
+			"		GREP=\"$BUSYBOX grep\"\n" +
+			"	fi\n" +
+			"	# Grep is absolutely required\n" +
+			"	if ! $ECHO 1 | $GREP -q 1 >/dev/null 2>/dev/null ; then\n" +
+			"		$ECHO The grep command is required. Droid Wall will not work.\n" +
+			"		exit 1\n" +
+			"	fi\n" +
 			"fi\n" +
 			"# Try to find iptables\n" +
 			"if " + dir + "/iptables_g1 --version >/dev/null 2>/dev/null ; then\n" +
-			"	export IPTABLES="+dir+"/iptables_g1\n" +
+			"	IPTABLES="+dir+"/iptables_g1\n" +
 			"elif " + dir + "/iptables_n1 --version >/dev/null 2>/dev/null ; then\n" +
-			"	export IPTABLES="+dir+"/iptables_n1\n" +
+			"	IPTABLES="+dir+"/iptables_n1\n" +
 			"fi\n" +
 			"";
 	}
@@ -209,6 +220,7 @@ public final class Api {
 				script.append("$IPTABLES -A droidwall -o ").append(itf).append(" -j droidwall-wifi || exit\n");
 			}
 			
+			script.append("# Filtering rules\n");
 			final String targetRule = (whitelist ? "RETURN" : "droidwall-reject");
 			final boolean any_3g = uids3g.indexOf(SPECIAL_UID_ANY) >= 0;
 			final boolean any_wifi = uidsWifi.indexOf(SPECIAL_UID_ANY) >= 0;
@@ -391,7 +403,7 @@ public final class Api {
 		try {
     		final StringBuilder res = new StringBuilder();
 			runScriptAsRoot(ctx, scriptHeader(ctx) +
-								 "echo $IPTABLES\n" +
+								 "$ECHO $IPTABLES\n" +
 								 "$IPTABLES -L -v\n", res);
 			alert(ctx, res);
 		} catch (Exception e) {
@@ -434,12 +446,12 @@ public final class Api {
 				alert(ctx, res);
 				return;
 			}
-			BufferedReader r = new BufferedReader(new StringReader(res.toString()));
+			final BufferedReader r = new BufferedReader(new StringReader(res.toString()));
 			res = new StringBuilder();
 			String line;
 			int start, end;
 			Integer appid;
-			HashMap<Integer, Integer> map = new HashMap<Integer, Integer>();
+			final HashMap<Integer, Integer> map = new HashMap<Integer, Integer>();
 			while ((line = r.readLine()) != null) {
 				start = line.indexOf("UID=");
 				if (start == -1) continue;
@@ -708,6 +720,12 @@ public final class Api {
 			file = new File(ctx.getCacheDir(), "iptables_n1");
 			if (!file.exists()) {
 				copyRawFile(ctx, R.raw.iptables_n1, file, "755");
+				changed = true;
+			}
+			// Check busybox
+			file = new File(ctx.getCacheDir(), "busybox_g1");
+			if (!file.exists()) {
+				copyRawFile(ctx, R.raw.busybox_g1, file, "755");
 				changed = true;
 			}
 			if (changed) {
