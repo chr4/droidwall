@@ -54,7 +54,7 @@ import android.widget.Toast;
  */
 public final class Api {
 	/** application version string */
-	public static final String VERSION = "1.4.2";
+	public static final String VERSION = "1.4.3-dev";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
 	/** root script filename */
@@ -179,6 +179,7 @@ public final class Api {
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		final boolean whitelist = prefs.getString(PREF_MODE, MODE_WHITELIST).equals(MODE_WHITELIST);
 		final boolean blacklist = !whitelist;
+		final boolean logenabled = ctx.getSharedPreferences(PREFS_NAME, 0).getBoolean(PREF_LOGENABLED, false);
 
     	final StringBuilder script = new StringBuilder();
 		try {
@@ -200,7 +201,7 @@ public final class Api {
 				"$IPTABLES -F droidwall-reject || exit 10\n" +
 			"");
 			// Check if logging is enabled
-			if (ctx.getSharedPreferences(PREFS_NAME, 0).getBoolean(PREF_LOGENABLED, false)) {
+			if (logenabled) {
 				script.append("" +
 					"# Create the log and reject rules (ignore errors on the LOG target just in case it is not available)\n" +
 					"$IPTABLES -A droidwall-reject -j LOG --log-prefix \"[DROIDWALL] \" --log-uid\n" +
@@ -211,6 +212,10 @@ public final class Api {
 					"# Create the reject rule (log disabled)\n" +
 					"$IPTABLES -A droidwall-reject -j REJECT || exit 11\n" +
 				"");
+			}
+			if (whitelist && logenabled) {
+				script.append("# Allow DNS lookups on white-list for a better logging (ignore errors)\n");
+				script.append("$IPTABLES -A droidwall -p udp --dport 53 -j RETURN\n");
 			}
 			script.append("# Main rules (per interface)\n");
 			for (final String itf : ITFS_3G) {
@@ -438,7 +443,7 @@ public final class Api {
 		try {
     		StringBuilder res = new StringBuilder();
 			int code = runScriptAsRoot(ctx, scriptHeader(ctx) +
-					"dmesg | $GREP [DROIDWALL]\n", res);
+					"dmesg | $GREP DROIDWALL\n", res);
 			if (code != 0) {
 				if (res.length() == 0) {
 					res.append("Log is empty");
@@ -447,38 +452,68 @@ public final class Api {
 				return;
 			}
 			final BufferedReader r = new BufferedReader(new StringReader(res.toString()));
+			final Integer unknownUID = -99;
 			res = new StringBuilder();
 			String line;
 			int start, end;
 			Integer appid;
-			final HashMap<Integer, Integer> map = new HashMap<Integer, Integer>();
+			final HashMap<Integer, LogInfo> map = new HashMap<Integer, LogInfo>();
+			LogInfo loginfo = null;
 			while ((line = r.readLine()) != null) {
-				start = line.indexOf("UID=");
-				if (start == -1) continue;
-				start += 4;
-				end = line.indexOf(" ", start);
-				if (end == -1) continue;
-				appid = Integer.parseInt(line.substring(start, end));
-				if (map.containsKey(appid)) {
-					map.put(appid, map.get(appid) + 1);
-				} else {
-					map.put(appid, 1);
+				if (line.indexOf("[DROIDWALL]") == -1) continue;
+				appid = unknownUID;
+				if (((start=line.indexOf("UID=")) != -1) && ((end=line.indexOf(" ", start)) != -1)) {
+					appid = Integer.parseInt(line.substring(start+4, end));
+				}
+				loginfo = map.get(appid);
+				if (loginfo == null) {
+					loginfo = new LogInfo();
+					map.put(appid, loginfo);
+				}
+				loginfo.totalBlocked += 1;
+				if (((start=line.indexOf("DST=")) != -1) && ((end=line.indexOf(" ", start)) != -1)) {
+					String dst = line.substring(start+4, end);
+					if (loginfo.dstBlocked.containsKey(dst)) {
+						loginfo.dstBlocked.put(dst, loginfo.dstBlocked.get(dst) + 1);
+					} else {
+						loginfo.dstBlocked.put(dst, 1);
+					}
 				}
 			}
 			final DroidApp[] apps = getApps(ctx);
 			for (Integer id : map.keySet()) {
-				res.append("App ID ").append(id);
-				for (DroidApp app : apps) {
-					if (app.uid == id) {
-						res.append(" (").append(app.names[0]);
-						if (app.names.length > 1) {
-							res.append(", ...)");
-						} else {
-							res.append(")");
+				res.append("App ID ");
+				if (id != unknownUID) {
+					res.append(id);
+					for (DroidApp app : apps) {
+						if (app.uid == id) {
+							res.append(" (").append(app.names[0]);
+							if (app.names.length > 1) {
+								res.append(", ...)");
+							} else {
+								res.append(")");
+							}
+							break;
 						}
 					}
+				} else {
+					res.append("(unknown)");
 				}
-				res.append(" - blocked ").append(map.get(id)).append(" packets.\n");
+				loginfo = map.get(id);
+				res.append(" - Blocked ").append(loginfo.totalBlocked).append(" packets");
+				if (loginfo.dstBlocked.size() > 0) {
+					res.append(" (");
+					boolean first = true;
+					for (String dst : loginfo.dstBlocked.keySet()) {
+						if (!first) {
+							res.append(", ");
+						}
+						res.append(loginfo.dstBlocked.get(dst)).append(" packets for ").append(dst);
+						first = false;
+					}
+					res.append(")");
+				}
+				res.append("\n\n");
 			}
 			if (res.length() == 0) {
 				res.append("Log is empty");
@@ -808,6 +843,16 @@ public final class Api {
     		return tostr;
     	}
     }
+    /**
+     * Small internal structure used to hold log information
+     */
+	private static final class LogInfo {
+		private int totalBlocked; // Total number of packets blocked
+		private HashMap<String, Integer> dstBlocked; // Number of packets blocked per destination IP address
+		private LogInfo() {
+			this.dstBlocked = new HashMap<String, Integer>();
+		}
+	}
 	/**
 	 * Internal thread used to execute scripts (as root or not).
 	 */
