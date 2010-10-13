@@ -88,6 +88,8 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     		this.listview = (ListView) this.findViewById(R.id.listview);
     	}
     	refreshHeader();
+    	// Force re-loading the application list
+    	Api.applications = null;
 		final String pwd = getSharedPreferences(Api.PREFS_NAME, 0).getString(Api.PREF_PASSWORD, "");
 		if (pwd.length() == 0) {
 			// No password lock
