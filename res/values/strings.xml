@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Droid Wall</string>
-    <string name="title_enabled">Droid Wall</string>
-    <string name="title_disabled">Droid Wall (Firewall disabled)</string>
+    <string name="app_name">DroidWall</string>
+    <string name="title_enabled">DroidWall</string>
+    <string name="title_disabled">DroidWall (Firewall disabled)</string>
     <string name="showrules">Show rules</string>
     <string name="applyrules">Apply rules</string>
     <string name="saverules">Save rules</string>
@@ -20,16 +20,16 @@
     <string name="pass_titleget">Password required</string>
     <string name="enterpass">Enter the password:</string>
     <string name="enternewpass">Enter the new password (leave blank to remove):</string>
-    <string name="toast_bin_installed">Droid Wall: Binary files installed!</string>
-    <string name="toast_error_enabling">"Droid Wall: Error enabling firewall!"</string>
+    <string name="toast_bin_installed">DroidWall: Binary files installed!</string>
+    <string name="toast_error_enabling">"DroidWall: Error enabling firewall!"</string>
 	<string name="help_dialog_text"><i>Author: Rodrigo Zechin Rosauro</i>
 		\n<i><a href="http://droidwall.googlecode.com">http://droidwall.googlecode.com</a></i>
 		\n
-		\n<i>Droid Wall - Android Firewall</i> is a front-end application for the powerful <b>iptables</b> Linux firewall.
+		\n<i>DroidWall - Android Firewall</i> is a front-end application for the powerful <b>iptables</b> Linux firewall.
 		It allows you to restrict which applications are permitted to access your data networks.
 		\nThis is the perfect solution if you don\'t have an unlimited data plan, or just wants to see your battery lasting longer.
 		\n
-		\n<b>Using Droid Wall:</b>
+		\n<b>Using DroidWall:</b>
 		\n<b>1.</b> Click on <b>Mode</b> to switch between <i>White List</i> and <i>Black List</i> modes.
 		\n<b>2.</b> Mark the applications that you want to block or allow (depending on the selected mode), for each interface.
 		\n<b>3.</b> Open the menu and enable the firewall. If the firewall is already enabled, just select <b>Apply rules</b>.
@@ -37,14 +37,14 @@
 		\nIf want to check all current iptables rules, select <b>Show rules</b> in the menu.
 		\n
 		\n<b>Widget:</b>
-		\nTo quickly enable or disable the firewall, add the Droid Wall widget to your home screen.
+		\nTo quickly enable or disable the firewall, add the DroidWall widget to your home screen.
 		\n
 		\n<b>Firewall logs:</b>
-		\nIf you want to see which applications have been blocked by Droid Wall, open the menu and enable the Log.
-		\nDroid Wall will then log each application blocked. You can check the log by opening the menu and selecting <b>More -> Show log</b>.
+		\nIf you want to see which applications have been blocked by DroidWall, open the menu and enable the Log.
+		\nDroidWall will then log each application blocked. You can check the log by opening the menu and selecting <b>More -> Show log</b>.
 		\n
 		\n<b>Password lock:</b>
-		\nYou can set a password lock for Droid Wall by using the <b>Set password</b> menu option.
+		\nYou can set a password lock for DroidWall by using the <b>Set password</b> menu option.
 		\nTo remove the password protection, just reset it to blank.
 	</string>
 </resources>

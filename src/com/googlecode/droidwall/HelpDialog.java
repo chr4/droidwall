@@ -34,7 +34,7 @@ public class HelpDialog extends AlertDialog {
 		final View view = getLayoutInflater().inflate(R.layout.help_dialog, null);
 		setButton(context.getText(R.string.close), (OnClickListener)null);
 		setIcon(R.drawable.icon);
-		setTitle("Droid Wall v" + Api.VERSION);
+		setTitle("DroidWall v" + Api.VERSION);
 		setView(view);
 	}
 }

@@ -125,7 +125,7 @@ public final class Api {
 			"	fi\n" +
 			"	# Grep is absolutely required\n" +
 			"	if ! $ECHO 1 | $GREP -q 1 >/dev/null 2>/dev/null ; then\n" +
-			"		$ECHO The grep command is required. Droid Wall will not work.\n" +
+			"		$ECHO The grep command is required. DroidWall will not work.\n" +
 			"		exit 1\n" +
 			"	fi\n" +
 			"fi\n" +
@@ -667,8 +667,8 @@ public final class Api {
 		}
 		if (showErrors) {
 			alert(ctx, "Could not acquire root access.\n" +
-				"You need a rooted phone to run Droid Wall.\n\n" +
-				"If this phone is already rooted, please make sure Droid Wall has enough permissions to execute the \"su\" command.\n" +
+				"You need a rooted phone to run DroidWall.\n\n" +
+				"If this phone is already rooted, please make sure DroidWall has enough permissions to execute the \"su\" command.\n" +
 				"Error message: " + res.toString());
 		}
 		return false;
