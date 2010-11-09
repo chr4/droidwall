@@ -26,6 +26,7 @@ package com.googlecode.droidwall;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -80,6 +81,8 @@ public final class Api {
 	public static DroidApp applications[] = null;
 	// Do we have root access?
 	private static boolean hasroot = false;
+	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no,  1: yes)
+	private static int isARMv6 = -1;
 
     /**
      * Display a simple alert box
@@ -95,12 +98,36 @@ public final class Api {
     	}
     }
 	/**
+	 * Check if this is an ARMv6 device
+	 * @return true if this is ARMv6
+	 */
+	private static boolean isARMv6() {
+		if (isARMv6 == -1) {
+			BufferedReader r = null;
+			try {
+				isARMv6 = 0;
+				r = new BufferedReader(new FileReader("/proc/cpuinfo"));
+				for (String line = r.readLine(); line != null; line = r.readLine()) {
+					if (line.startsWith("Processor") && line.contains("ARMv6")) {
+						isARMv6 = 1;
+						break;
+					}
+				}
+			} catch (Exception ex) {
+			} finally {
+				if (r != null) try {r.close();} catch (Exception ex) {}
+			}
+		}
+		return (isARMv6 == 1);
+	}
+	/**
 	 * Create the generic shell script header used to determine which iptables binary to use.
 	 * @param ctx context
 	 * @return script header
 	 */
 	private static String scriptHeader(Context ctx) {
 		final String dir = ctx.getCacheDir().getAbsolutePath();
+		final String myiptables = dir + (isARMv6() ? "/iptables_g1" : "/iptables_n1");
 		return "" +
 			"IPTABLES=iptables\n" +
 			"BUSYBOX=busybox\n" +
@@ -130,10 +157,8 @@ public final class Api {
 			"	fi\n" +
 			"fi\n" +
 			"# Try to find iptables\n" +
-			"if " + dir + "/iptables_g1 --version >/dev/null 2>/dev/null ; then\n" +
-			"	IPTABLES="+dir+"/iptables_g1\n" +
-			"elif " + dir + "/iptables_n1 --version >/dev/null 2>/dev/null ; then\n" +
-			"	IPTABLES="+dir+"/iptables_n1\n" +
+			"if " + myiptables + " --version >/dev/null 2>/dev/null ; then\n" +
+			"	IPTABLES="+myiptables+"\n" +
 			"fi\n" +
 			"";
 	}
@@ -747,13 +772,13 @@ public final class Api {
 		try {
 			// Check iptables_g1
 			File file = new File(ctx.getCacheDir(), "iptables_g1");
-			if (!file.exists()) {
+			if ((!file.exists()) && isARMv6()) {
 				copyRawFile(ctx, R.raw.iptables_g1, file, "755");
 				changed = true;
 			}
 			// Check iptables_n1
 			file = new File(ctx.getCacheDir(), "iptables_n1");
-			if (!file.exists()) {
+			if ((!file.exists()) && (!isARMv6())) {
 				copyRawFile(ctx, R.raw.iptables_n1, file, "755");
 				changed = true;
 			}
