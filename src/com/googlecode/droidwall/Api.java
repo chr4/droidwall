@@ -55,7 +55,7 @@ import android.widget.Toast;
  */
 public final class Api {
 	/** application version string */
-	public static final String VERSION = "1.4.3-dev";
+	public static final String VERSION = "1.4.3";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
 	/** root script filename */
@@ -650,6 +650,7 @@ public final class Api {
 				new DroidApp(android.os.Process.getUidForName("root"), "(root) - Applications running as root", false, false),
 				new DroidApp(android.os.Process.getUidForName("media"), "Media server", false, false),
 				new DroidApp(android.os.Process.getUidForName("vpn"), "VPN networking", false, false),
+				new DroidApp(android.os.Process.getUidForName("shell"), "Linux shell", false, false),
 			};
 			for (int i=0; i<special.length; i++) {
 				app = special[i];
