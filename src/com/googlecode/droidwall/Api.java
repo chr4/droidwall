@@ -111,6 +111,9 @@ public final class Api {
 					if (line.startsWith("Processor") && line.contains("ARMv6")) {
 						isARMv6 = 1;
 						break;
+					} else if (line.startsWith("CPU architecture") && line.contains("5TE")) {
+						isARMv6 = 1;
+						break;
 					}
 				}
 			} catch (Exception ex) {
@@ -912,7 +915,9 @@ public final class Api {
 				Runtime.getRuntime().exec("chmod 777 "+abspath).waitFor();
 				// Write the script to be executed
 				final OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file));
-				out.write("#!/system/bin/sh\n");
+				if (new File("/system/bin/sh").exists()) {
+					out.write("#!/system/bin/sh\n");
+				}
 				out.write(script);
 				if (!script.endsWith("\n")) out.write("\n");
 				out.write("exit\n");
