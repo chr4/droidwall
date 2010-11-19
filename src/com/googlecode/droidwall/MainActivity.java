@@ -39,16 +39,16 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.CompoundButton.OnCheckedChangeListener;
 
 import com.googlecode.droidwall.Api.DroidApp;
 
@@ -432,10 +432,11 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
-				if (!Api.hasRootAccess(MainActivity.this, true)) return;
 				if (enabled) {
-					if (Api.applyIptablesRules(MainActivity.this, true)) {
+					if (Api.hasRootAccess(MainActivity.this, true) && Api.applyIptablesRules(MainActivity.this, true)) {
 						Toast.makeText(MainActivity.this, "Rules applied with success", Toast.LENGTH_SHORT).show();
+					} else {
+						Api.setEnabled(MainActivity.this, false);
 					}
 				} else {
 					Api.saveRules(MainActivity.this);
