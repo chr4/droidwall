@@ -55,7 +55,7 @@ import android.widget.Toast;
  */
 public final class Api {
 	/** application version string */
-	public static final String VERSION = "1.4.3";
+	public static final String VERSION = "1.4.4-dev";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
 	/** root script filename */
@@ -808,7 +808,7 @@ public final class Api {
 	 */
 	public static boolean isEnabled(Context ctx) {
 		if (ctx == null) return false;
-		return ctx.getSharedPreferences(PREFS_NAME, 0).getBoolean(PREF_ENABLED, true);
+		return ctx.getSharedPreferences(PREFS_NAME, 0).getBoolean(PREF_ENABLED, false);
 	}
 	
 	/**
