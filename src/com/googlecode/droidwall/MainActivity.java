@@ -32,6 +32,7 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -62,11 +63,12 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	private static final int MENU_DISABLE	= 0;
 	private static final int MENU_TOGGLELOG	= 1;
 	private static final int MENU_APPLY		= 2;
-	private static final int MENU_SHOWRULES	= 3;
+	private static final int MENU_EXIT		= 3;
 	private static final int MENU_HELP		= 4;
 	private static final int MENU_SHOWLOG	= 5;
-	private static final int MENU_CLEARLOG	= 6;
-	private static final int MENU_SETPWD	= 7;
+	private static final int MENU_SHOWRULES	= 6;
+	private static final int MENU_CLEARLOG	= 7;
+	private static final int MENU_SETPWD	= 8;
 	
 	/** progress dialog instance */
 	private ProgressDialog progress = null;
@@ -82,14 +84,18 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		Api.assertBinaries(this, true);
     }
     @Override
+    protected void onStart() {
+    	super.onStart();
+    	// Force re-loading the application list
+    	Api.applications = null;
+    }
+    @Override
     protected void onResume() {
     	super.onResume();
     	if (this.listview == null) {
     		this.listview = (ListView) this.findViewById(R.id.listview);
     	}
     	refreshHeader();
-    	// Force re-loading the application list
-    	Api.applications = null;
 		final String pwd = getSharedPreferences(Api.PREFS_NAME, 0).getString(Api.PREF_PASSWORD, "");
 		if (pwd.length() == 0) {
 			// No password lock
@@ -133,18 +139,18 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     	final SharedPreferences prefs = getSharedPreferences(Api.PREFS_NAME, 0);
     	final String mode = prefs.getString(Api.PREF_MODE, Api.MODE_WHITELIST);
 		final TextView labelmode = (TextView) this.findViewById(R.id.label_mode);
-		if (mode.equals(Api.MODE_WHITELIST)) {
-			labelmode.setText("Mode: White list (allow selected)");
-		} else {
-			labelmode.setText("Mode: Black list (block selected)");
-		}
-		setTitle(Api.isEnabled(this) ? R.string.title_enabled : R.string.title_disabled);
+    	final Resources res = getResources();
+		int resid = (mode.equals(Api.MODE_WHITELIST) ? R.string.mode_whitelist : R.string.mode_blacklist);
+		labelmode.setText(res.getString(R.string.mode_header, res.getString(resid)));
+		resid = (Api.isEnabled(this) ? R.string.title_enabled : R.string.title_disabled);
+		setTitle(res.getString(resid, Api.VERSION));
     }
     /**
      * Displays a dialog box to select the operation mode (black or white list)
      */
     private void selectMode() {
-    	new AlertDialog.Builder(this).setItems(new String[]{"White list (allow selected)","Black list (block selected)"}, new DialogInterface.OnClickListener(){
+    	final Resources res = getResources();
+    	new AlertDialog.Builder(this).setItems(new String[]{res.getString(R.string.mode_whitelist),res.getString(R.string.mode_blacklist)}, new DialogInterface.OnClickListener(){
 			public void onClick(DialogInterface dialog, int which) {
 				final String mode = (which==0 ? Api.MODE_WHITELIST : Api.MODE_BLACKLIST);
 				final Editor editor = getSharedPreferences(Api.PREFS_NAME, 0).edit();
@@ -160,17 +166,18 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
      * @param pwd new password (empty to remove the lock)
      */
 	private void setPassword(String pwd) {
+    	final Resources res = getResources();
 		final Editor editor = getSharedPreferences(Api.PREFS_NAME, 0).edit();
 		editor.putString(Api.PREF_PASSWORD, pwd);
 		String msg;
 		if (editor.commit()) {
 			if (pwd.length() > 0) {
-				msg = "Password lock defined";
+				msg = res.getString(R.string.passdefined);
 			} else {
-				msg = "Password lock removed";
+				msg = res.getString(R.string.passremoved);
 			}
 		} else {
-			msg = "Error changing password lock";
+			msg = res.getString(R.string.passerror);
 		}
 		Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
 	}
@@ -207,15 +214,16 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		if (Api.isEnabled(this)) {
 			Api.applySavedIptablesRules(this, true);
 		}
-		Toast.makeText(MainActivity.this, "Log has been "+(enabled?"enabled.":"disabled."), Toast.LENGTH_SHORT).show();
+		Toast.makeText(MainActivity.this, (enabled?R.string.log_was_enabled:R.string.log_was_disabled), Toast.LENGTH_SHORT).show();
 	}
 	/**
 	 * If the applications are cached, just show them, otherwise load and show
 	 */
 	private void showOrLoadApplications() {
+    	final Resources res = getResources();
     	if (Api.applications == null) {
     		// The applications are not cached.. so lets display the progress dialog
-    		progress = ProgressDialog.show(this, "Working...", "Reading installed applications", true);
+    		progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.reading_apps), true);
         	final Handler handler = new Handler() {
         		public void handleMessage(Message msg) {
         			if (progress != null) progress.dismiss();
@@ -286,9 +294,10 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     	menu.add(0, MENU_DISABLE, 0, R.string.fw_enabled).setIcon(android.R.drawable.button_onoff_indicator_on);
     	menu.add(0, MENU_TOGGLELOG, 0, R.string.log_enabled).setIcon(android.R.drawable.button_onoff_indicator_on);
     	menu.add(0, MENU_APPLY, 0, R.string.applyrules).setIcon(R.drawable.apply);
-    	menu.add(0, MENU_SHOWRULES, 0, R.string.showrules).setIcon(R.drawable.show);
+    	menu.add(0, MENU_EXIT, 0, R.string.exit).setIcon(android.R.drawable.ic_menu_close_clear_cancel);
     	menu.add(0, MENU_HELP, 0, R.string.help).setIcon(android.R.drawable.ic_menu_help);
     	menu.add(0, MENU_SHOWLOG, 0, R.string.show_log).setIcon(R.drawable.show);
+    	menu.add(0, MENU_SHOWRULES, 0, R.string.showrules).setIcon(R.drawable.show);
     	menu.add(0, MENU_CLEARLOG, 0, R.string.clear_log).setIcon(android.R.drawable.ic_menu_close_clear_cancel);
     	menu.add(0, MENU_SETPWD, 0, R.string.setpwd).setIcon(android.R.drawable.ic_lock_lock);
     	
@@ -325,26 +334,30 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     	case MENU_DISABLE:
     		disableOrEnable();
     		return true;
-    	case MENU_SHOWRULES:
-    		showRules();
+    	case MENU_TOGGLELOG:
+    		toggleLogEnabled();
     		return true;
     	case MENU_APPLY:
     		applyOrSaveRules();
     		return true;
-    	case MENU_SETPWD:
-    		setPassword();
+    	case MENU_EXIT:
+    		finish();
+    		System.exit(0);
     		return true;
     	case MENU_HELP:
     		new HelpDialog(this).show();
     		return true;
-    	case MENU_TOGGLELOG:
-    		toggleLogEnabled();
-    		return true;
-    	case MENU_CLEARLOG:
-    		clearLog();
+    	case MENU_SETPWD:
+    		setPassword();
     		return true;
     	case MENU_SHOWLOG:
     		showLog();
+    		return true;
+    	case MENU_SHOWRULES:
+    		showRules();
+    		return true;
+    	case MENU_CLEARLOG:
+    		clearLog();
     		return true;
     	}
     	return false;
@@ -357,11 +370,10 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		Api.setEnabled(this, enabled);
 		if (enabled) {
 			applyOrSaveRules();
-			setTitle(R.string.title_enabled);
 		} else {
 			purgeRules();
-			setTitle(R.string.title_disabled);
 		}
+		refreshHeader();
 	}
 	/**
 	 * Set a new lock password
@@ -380,8 +392,9 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	 * Show iptable rules on a dialog
 	 */
 	private void showRules() {
+    	final Resources res = getResources();
 		final Handler handler;
-		progress = ProgressDialog.show(this, "Working...", "Please wait", true);
+		progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.please_wait), true);
 		handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
@@ -395,8 +408,9 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	 * Show logs on a dialog
 	 */
 	private void showLog() {
+    	final Resources res = getResources();
 		final Handler handler;
-		progress = ProgressDialog.show(this, "Working...", "Please wait", true);
+		progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.please_wait), true);
 		handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
@@ -409,14 +423,15 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	 * Clear logs
 	 */
 	private void clearLog() {
+    	final Resources res = getResources();
 		final Handler handler;
-		progress = ProgressDialog.show(this, "Working...", "Please wait", true);
+		progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.please_wait), true);
 		handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
 				if (!Api.hasRootAccess(MainActivity.this, true)) return;
 				if (Api.clearLog(MainActivity.this)) {
-					Toast.makeText(MainActivity.this, "Logs cleared", Toast.LENGTH_SHORT).show();
+					Toast.makeText(MainActivity.this, R.string.log_cleared, Toast.LENGTH_SHORT).show();
 				}
 			}
 		};
@@ -426,21 +441,22 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	 * Apply or save iptable rules, showing a visual indication
 	 */
 	private void applyOrSaveRules() {
+    	final Resources res = getResources();
 		final Handler handler;
 		final boolean enabled = Api.isEnabled(this);
-		progress = ProgressDialog.show(this, "Working...", (enabled?"Applying":"Saving") + " iptables rules.", true);
+		progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(enabled?R.string.applying_rules:R.string.saving_rules), true);
 		handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
 				if (enabled) {
 					if (Api.hasRootAccess(MainActivity.this, true) && Api.applyIptablesRules(MainActivity.this, true)) {
-						Toast.makeText(MainActivity.this, "Rules applied with success", Toast.LENGTH_SHORT).show();
+						Toast.makeText(MainActivity.this, R.string.rules_applied, Toast.LENGTH_SHORT).show();
 					} else {
 						Api.setEnabled(MainActivity.this, false);
 					}
 				} else {
 					Api.saveRules(MainActivity.this);
-					Toast.makeText(MainActivity.this, "Rules saved with success", Toast.LENGTH_SHORT).show();
+					Toast.makeText(MainActivity.this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
 				}
 			}
 		};
@@ -450,14 +466,15 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	 * Purge iptable rules, showing a visual indication
 	 */
 	private void purgeRules() {
+    	final Resources res = getResources();
 		final Handler handler;
-		progress = ProgressDialog.show(this, "Working...", "Deleting iptables rules.", true);
+		progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.deleting_rules), true);
 		handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
 				if (!Api.hasRootAccess(MainActivity.this, true)) return;
 				if (Api.purgeIptables(MainActivity.this, true)) {
-					Toast.makeText(MainActivity.this, "Rules purged with success", Toast.LENGTH_SHORT).show();
+					Toast.makeText(MainActivity.this, R.string.rules_deleted, Toast.LENGTH_SHORT).show();
 				}
 			}
 		};

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">DroidWall</string>
-    <string name="title_enabled">DroidWall</string>
-    <string name="title_disabled">DroidWall (Firewall disabled)</string>
+    <string name="title_enabled">DroidWall v%s</string>
+    <string name="title_disabled">DroidWall v%s (Firewall disabled)</string>
     <string name="showrules">Show rules</string>
     <string name="applyrules">Apply rules</string>
     <string name="saverules">Save rules</string>
@@ -10,16 +10,35 @@
     <string name="setpwd">Set password</string>
     <string name="help">Help</string>
     <string name="close">Close</string>
+    <string name="exit">Exit</string>
     <string name="fw_enabled">Firewall is enabled</string>
     <string name="fw_disabled">Firewall is disabled</string>
     <string name="log_enabled">Log is enabled</string>
     <string name="log_disabled">Log is disabled</string>
+    <string name="log_was_enabled">Log has been enabled</string>
+    <string name="log_was_disabled">Log has been disabled</string>
+    <string name="log_cleared">Log cleared</string>
     <string name="show_log">Show log</string>
     <string name="clear_log">Clear log</string>
+    <string name="applying_rules">Applying iptables rules.</string>
+    <string name="saving_rules">Saving iptables rules.</string>
+    <string name="deleting_rules">Deleting iptables rules.</string>
+    <string name="rules_applied">Rules applied with success</string>
+    <string name="rules_saved">Rules saved with success</string>
+    <string name="rules_deleted">Rules deleted with success</string>
     <string name="pass_titleset">Set password lock</string>
     <string name="pass_titleget">Password required</string>
     <string name="enterpass">Enter the password:</string>
     <string name="enternewpass">Enter the new password (leave blank to remove):</string>
+    <string name="passdefined">Password lock defined</string>
+    <string name="passremoved">Password lock removed</string>
+    <string name="passerror">Error changing password lock</string>
+    <string name="working">Working...</string>
+    <string name="reading_apps">Reading installed applications</string>
+    <string name="please_wait">Please wait</string>
+    <string name="mode_header">Mode: %s</string>
+    <string name="mode_whitelist">White list (allow selected)</string>
+    <string name="mode_blacklist">Black list (block selected)</string>
     <string name="toast_bin_installed">DroidWall: Binary files installed!</string>
     <string name="toast_error_enabling">"DroidWall: Error enabling firewall!"</string>
 	<string name="help_dialog_text"><i>Author: Rodrigo Zechin Rosauro</i>
