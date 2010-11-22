@@ -111,7 +111,7 @@ public final class Api {
 					if (line.startsWith("Processor") && line.contains("ARMv6")) {
 						isARMv6 = 1;
 						break;
-					} else if (line.startsWith("CPU architecture") && line.contains("5TE")) {
+					} else if (line.startsWith("CPU architecture") && (line.contains("6TE") || line.contains("5TE"))) {
 						isARMv6 = 1;
 						break;
 					}
