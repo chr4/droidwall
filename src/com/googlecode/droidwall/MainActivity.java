@@ -36,6 +36,7 @@ import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -367,6 +368,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
      */
 	private void disableOrEnable() {
 		final boolean enabled = !Api.isEnabled(this);
+		Log.d("DroidWall", "Changing enabled status to: " + enabled);
 		Api.setEnabled(this, enabled);
 		if (enabled) {
 			applyOrSaveRules();
@@ -449,12 +451,15 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
 				if (enabled) {
+					Log.d("DroidWall", "Applying rules.");
 					if (Api.hasRootAccess(MainActivity.this, true) && Api.applyIptablesRules(MainActivity.this, true)) {
 						Toast.makeText(MainActivity.this, R.string.rules_applied, Toast.LENGTH_SHORT).show();
 					} else {
+						Log.d("DroidWall", "Failed - Disabling firewall.");
 						Api.setEnabled(MainActivity.this, false);
 					}
 				} else {
+					Log.d("DroidWall", "Saving rules.");
 					Api.saveRules(MainActivity.this);
 					Toast.makeText(MainActivity.this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
 				}
