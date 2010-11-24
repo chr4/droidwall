@@ -36,5 +36,5 @@ echo Fixing package name on java files
 sed -i "s/package com.googlecode.droidwall;/package com.googlecode.droidwall.donate;/" $ROOT/src/com/googlecode/droidwall/donate/*.java || exit
 sed -i "s/import com.googlecode.droidwall/import com.googlecode.droidwall.donate/" $ROOT/src/com/googlecode/droidwall/donate/*.java || exit
 echo Fixing package name on AndroidManifest.xml
-sed -i "s/com.googlecode.droidwall/com.googlecode.droidwall.donate/" $ROOT/AndroidManifest.xml || exit
+sed -i "s/package=\"com.googlecode.droidwall\"/package=\"com.googlecode.droidwall.donate\"/" $ROOT/AndroidManifest.xml || exit
 echo Done!
