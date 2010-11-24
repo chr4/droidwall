@@ -819,7 +819,7 @@ public final class Api {
 	public static void setEnabled(Context ctx, boolean enabled) {
 		if (ctx == null) return;
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
-		if (prefs.getBoolean(PREF_ENABLED, true) == enabled) {
+		if (prefs.getBoolean(PREF_ENABLED, false) == enabled) {
 			return;
 		}
 		final Editor edit = prefs.edit();
