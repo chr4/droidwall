@@ -41,16 +41,16 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 
 import com.googlecode.droidwall.Api.DroidApp;
 
@@ -72,7 +72,6 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	private static final int MENU_SETPWD	= 8;
 	
 	/** progress dialog instance */
-	private ProgressDialog progress = null;
 	private ListView listview;
 	
     /** Called when the activity is first created. */
@@ -88,6 +87,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     protected void onStart() {
     	super.onStart();
     	// Force re-loading the application list
+		Log.d("DroidWall", "onStart() - Forcing APP list reload!");
     	Api.applications = null;
     }
     @Override
@@ -224,10 +224,10 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     	final Resources res = getResources();
     	if (Api.applications == null) {
     		// The applications are not cached.. so lets display the progress dialog
-    		progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.reading_apps), true);
+    		final ProgressDialog progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.reading_apps), true);
         	final Handler handler = new Handler() {
         		public void handleMessage(Message msg) {
-        			if (progress != null) progress.dismiss();
+        			progress.dismiss();
         			showApplications();
         		}
         	};
@@ -395,11 +395,10 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	 */
 	private void showRules() {
     	final Resources res = getResources();
-		final Handler handler;
-		progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.please_wait), true);
-		handler = new Handler() {
+		final ProgressDialog progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.please_wait), true);
+		final Handler handler = new Handler() {
 			public void handleMessage(Message msg) {
-				if (progress != null) progress.dismiss();
+				progress.dismiss();
 				if (!Api.hasRootAccess(MainActivity.this, true)) return;
 				Api.showIptablesRules(MainActivity.this);
 			}
@@ -411,9 +410,8 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	 */
 	private void showLog() {
     	final Resources res = getResources();
-		final Handler handler;
-		progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.please_wait), true);
-		handler = new Handler() {
+		final ProgressDialog progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.please_wait), true);
+		final Handler handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
 				Api.showLog(MainActivity.this);
@@ -426,9 +424,8 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	 */
 	private void clearLog() {
     	final Resources res = getResources();
-		final Handler handler;
-		progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.please_wait), true);
-		handler = new Handler() {
+		final ProgressDialog progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.please_wait), true);
+		final Handler handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
 				if (!Api.hasRootAccess(MainActivity.this, true)) return;
@@ -444,10 +441,9 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	 */
 	private void applyOrSaveRules() {
     	final Resources res = getResources();
-		final Handler handler;
 		final boolean enabled = Api.isEnabled(this);
-		progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(enabled?R.string.applying_rules:R.string.saving_rules), true);
-		handler = new Handler() {
+		final ProgressDialog progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(enabled?R.string.applying_rules:R.string.saving_rules), true);
+		final Handler handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
 				if (enabled) {
@@ -472,9 +468,8 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	 */
 	private void purgeRules() {
     	final Resources res = getResources();
-		final Handler handler;
-		progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.deleting_rules), true);
-		handler = new Handler() {
+		final ProgressDialog progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.deleting_rules), true);
+		final Handler handler = new Handler() {
 			public void handleMessage(Message msg) {
 				if (progress != null) progress.dismiss();
 				if (!Api.hasRootAccess(MainActivity.this, true)) return;
