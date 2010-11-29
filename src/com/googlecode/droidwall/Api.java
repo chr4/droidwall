@@ -55,7 +55,7 @@ import android.widget.Toast;
  */
 public final class Api {
 	/** application version string */
-	public static final String VERSION = "1.4.5";
+	public static final String VERSION = "1.4.6-dev";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
 	/** root script filename */
@@ -203,7 +203,7 @@ public final class Api {
 		}
 		assertBinaries(ctx, showErrors);
 		final String ITFS_WIFI[] = {"tiwlan+", "wlan+", "eth+"};
-		final String ITFS_3G[] = {"rmnet+","pdp+","ppp+","uwbr+"};
+		final String ITFS_3G[] = {"rmnet+","pdp+","ppp+","uwbr+","wimax+"};
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		final boolean whitelist = prefs.getString(PREF_MODE, MODE_WHITELIST).equals(MODE_WHITELIST);
 		final boolean blacklist = !whitelist;
