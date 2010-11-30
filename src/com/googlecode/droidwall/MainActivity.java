@@ -227,7 +227,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     		final ProgressDialog progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.reading_apps), true);
         	final Handler handler = new Handler() {
         		public void handleMessage(Message msg) {
-        			progress.dismiss();
+        			try {progress.dismiss();} catch(Exception ex){}
         			showApplications();
         		}
         	};
@@ -398,7 +398,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		final ProgressDialog progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.please_wait), true);
 		final Handler handler = new Handler() {
 			public void handleMessage(Message msg) {
-				progress.dismiss();
+    			try {progress.dismiss();} catch(Exception ex){}
 				if (!Api.hasRootAccess(MainActivity.this, true)) return;
 				Api.showIptablesRules(MainActivity.this);
 			}
@@ -413,7 +413,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		final ProgressDialog progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.please_wait), true);
 		final Handler handler = new Handler() {
 			public void handleMessage(Message msg) {
-				if (progress != null) progress.dismiss();
+    			try {progress.dismiss();} catch(Exception ex){}
 				Api.showLog(MainActivity.this);
 			}
 		};
@@ -427,7 +427,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		final ProgressDialog progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.please_wait), true);
 		final Handler handler = new Handler() {
 			public void handleMessage(Message msg) {
-				if (progress != null) progress.dismiss();
+    			try {progress.dismiss();} catch(Exception ex){}
 				if (!Api.hasRootAccess(MainActivity.this, true)) return;
 				if (Api.clearLog(MainActivity.this)) {
 					Toast.makeText(MainActivity.this, R.string.log_cleared, Toast.LENGTH_SHORT).show();
@@ -445,7 +445,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		final ProgressDialog progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(enabled?R.string.applying_rules:R.string.saving_rules), true);
 		final Handler handler = new Handler() {
 			public void handleMessage(Message msg) {
-				if (progress != null) progress.dismiss();
+    			try {progress.dismiss();} catch(Exception ex){}
 				if (enabled) {
 					Log.d("DroidWall", "Applying rules.");
 					if (Api.hasRootAccess(MainActivity.this, true) && Api.applyIptablesRules(MainActivity.this, true)) {
@@ -471,7 +471,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		final ProgressDialog progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.deleting_rules), true);
 		final Handler handler = new Handler() {
 			public void handleMessage(Message msg) {
-				if (progress != null) progress.dismiss();
+    			try {progress.dismiss();} catch(Exception ex){}
 				if (!Api.hasRootAccess(MainActivity.this, true)) return;
 				if (Api.purgeIptables(MainActivity.this, true)) {
 					Toast.makeText(MainActivity.this, R.string.rules_deleted, Toast.LENGTH_SHORT).show();
