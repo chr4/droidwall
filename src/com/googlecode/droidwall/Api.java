@@ -58,6 +58,8 @@ public final class Api {
 	public static final String VERSION = "1.4.6";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
+	/** special application UID used to indicate the Linux Kernel */
+	public static final int SPECIAL_UID_KERNEL	= -11;
 	/** root script filename */
 	private static final String SCRIPT_FILE = "droidwall.sh";
 	
@@ -278,7 +280,7 @@ public final class Api {
 			} else {
 				/* release/block individual applications on this interface */
 				for (final Integer uid : uids3g) {
-					script.append("$IPTABLES -A droidwall-3g -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
+					if (uid >= 0) script.append("$IPTABLES -A droidwall-3g -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
 				}
 			}
 			if (any_wifi) {
@@ -289,14 +291,35 @@ public final class Api {
 			} else {
 				/* release/block individual applications on this interface */
 				for (final Integer uid : uidsWifi) {
-					script.append("$IPTABLES -A droidwall-wifi -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
+					if (uid >= 0) script.append("$IPTABLES -A droidwall-wifi -m owner --uid-owner ").append(uid).append(" -j ").append(targetRule).append(" || exit\n");
 				}
 			}
 			if (whitelist) {
 				if (!any_3g) {
-					script.append("$IPTABLES -A droidwall-3g -j droidwall-reject || exit\n");
+					if (uids3g.indexOf(SPECIAL_UID_KERNEL) >= 0) {
+						script.append("# hack to allow kernel packets on white-list\n");
+						script.append("$IPTABLES -A droidwall-3g -m owner --uid-owner 0:999999999 -j droidwall-reject || exit\n");
+					} else {
+						script.append("$IPTABLES -A droidwall-3g -j droidwall-reject || exit\n");
+					}
 				}
 				if (!any_wifi) {
+					if (uidsWifi.indexOf(SPECIAL_UID_KERNEL) >= 0) {
+						script.append("# hack to allow kernel packets on white-list\n");
+						script.append("$IPTABLES -A droidwall-wifi -m owner --uid-owner 0:999999999 -j droidwall-reject || exit\n");
+					} else {
+						script.append("$IPTABLES -A droidwall-wifi -j droidwall-reject || exit\n");
+					}
+				}
+			} else {
+				if (uids3g.indexOf(SPECIAL_UID_KERNEL) >= 0) {
+					script.append("# hack to BLOCK kernel packets on black-list\n");
+					script.append("$IPTABLES -A droidwall-3g -m owner --uid-owner 0:999999999 -j RETURN || exit\n");
+					script.append("$IPTABLES -A droidwall-3g -j droidwall-reject || exit\n");
+				}
+				if (uidsWifi.indexOf(SPECIAL_UID_KERNEL) >= 0) {
+					script.append("# hack to BLOCK kernel packets on black-list\n");
+					script.append("$IPTABLES -A droidwall-wifi -m owner --uid-owner 0:999999999 -j RETURN || exit\n");
 					script.append("$IPTABLES -A droidwall-wifi -j droidwall-reject || exit\n");
 				}
 			}
@@ -525,7 +548,7 @@ public final class Api {
 						}
 					}
 				} else {
-					res.append("(unknown)");
+					res.append("(kernel)");
 				}
 				loginfo = map.get(id);
 				res.append(" - Blocked ").append(loginfo.totalBlocked).append(" packets");
@@ -650,6 +673,7 @@ public final class Api {
 			/* add special applications to the list */
 			final DroidApp special[] = {
 				new DroidApp(SPECIAL_UID_ANY,"(Any application) - Same as selecting all applications", false, false),
+				new DroidApp(SPECIAL_UID_KERNEL,"(Kernel) - Linux kernel", false, false),
 				new DroidApp(android.os.Process.getUidForName("root"), "(root) - Applications running as root", false, false),
 				new DroidApp(android.os.Process.getUidForName("media"), "Media server", false, false),
 				new DroidApp(android.os.Process.getUidForName("vpn"), "VPN networking", false, false),
