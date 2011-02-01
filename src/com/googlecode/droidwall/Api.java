@@ -857,6 +857,65 @@ public final class Api {
         message.putExtra(Api.STATUS_EXTRA, enabled);
         ctx.sendBroadcast(message);
 	}
+	/**
+	 * Called when an application in removed (un-installed) from the system.
+	 * This will look for that application in the selected list and update the persisted values if necessary
+	 * @param ctx mandatory app context
+	 * @param uid UID of the application that has been removed
+	 */
+	public static void applicationRemoved(Context ctx, int uid) {
+		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
+		final Editor editor = prefs.edit();
+		// allowed application names separated by pipe '|' (persisted)
+		final String savedUids_wifi = prefs.getString(PREF_WIFI_UIDS, "");
+		final String savedUids_3g = prefs.getString(PREF_3G_UIDS, "");
+		final String uid_str = uid + "";
+		boolean changed = false;
+		// look for the removed application in the "wi-fi" list
+		if (savedUids_wifi.length() > 0) {
+			final StringBuilder newuids = new StringBuilder();
+			final StringTokenizer tok = new StringTokenizer(savedUids_wifi, "|");
+			while (tok.hasMoreTokens()) {
+				final String token = tok.nextToken();
+				if (uid_str.equals(token)) {
+					Log.d("DroidWall", "Removing UID " + token + " from the wi-fi list (package removed)!");
+					changed = true;
+				} else {
+					if (newuids.length() > 0) newuids.append('|');
+					newuids.append(token);
+				}
+			}
+			if (changed) {
+				editor.putString(PREF_WIFI_UIDS, newuids.toString());
+			}
+		}
+		// look for the removed application in the "3g" list
+		if (savedUids_3g.length() > 0) {
+			final StringBuilder newuids = new StringBuilder();
+			final StringTokenizer tok = new StringTokenizer(savedUids_3g, "|");
+			while (tok.hasMoreTokens()) {
+				final String token = tok.nextToken();
+				if (uid_str.equals(token)) {
+					Log.d("DroidWall", "Removing UID " + token + " from the 3G list (package removed)!");
+					changed = true;
+				} else {
+					if (newuids.length() > 0) newuids.append('|');
+					newuids.append(token);
+				}
+			}
+			if (changed) {
+				editor.putString(PREF_3G_UIDS, newuids.toString());
+			}
+		}
+		// if anything has changed, save the new prefs...
+		if (changed) {
+			editor.commit();
+			if (isEnabled(ctx)) {
+				// .. and also re-apply the rules if the firewall is enabled
+				applySavedIptablesRules(ctx, false);
+			}
+		}
+	}
 
     /**
      * Small structure to hold an application info

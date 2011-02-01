@@ -12,6 +12,12 @@
 	    <receiver android:name="BootBroadcast" android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
 	    	<intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"></action></intent-filter>
 		</receiver>
+		<receiver android:name ="PackageBroadcast">
+			<intent-filter>
+				<action android:name="android.intent.action.PACKAGE_REMOVED"/>            
+				<data android:scheme="package" />
+			</intent-filter>
+		</receiver>
         <receiver android:name="StatusWidget">
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/onoff_widget" />
             <intent-filter>
