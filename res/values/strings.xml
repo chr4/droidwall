@@ -84,4 +84,6 @@
 		\nYou can set a password lock for DroidWall by using the <b>Set password</b> menu option.
 		\nTo remove the password protection, just reset it to blank.
 	</string>
+	<string name="empty"></string>
+	<string name="mode">Mode: </string>
 </resources>

@@ -10,5 +10,5 @@
 	<ImageView android:id="@+id/itemicon" android:layout_width="34dip" android:layout_height="34dip"></ImageView>
 	<CheckBox android:id="@+id/itemcheck_wifi" android:layout_width="34dip" android:layout_height="34dip" android:padding="0px"></CheckBox>
 	<CheckBox android:id="@+id/itemcheck_3g" android:layout_width="34dip" android:layout_height="34dip" android:padding="0px"></CheckBox>
-	<TextView android:id="@+id/itemtext" android:layout_width="fill_parent" android:layout_height="wrap_content" android:paddingLeft="5dip" android:text="uid:packages"></TextView>
+	<TextView android:id="@+id/itemtext" android:layout_width="fill_parent" android:layout_height="wrap_content" android:paddingLeft="5dip" android:text="@string/empty"></TextView>
 </LinearLayout>
