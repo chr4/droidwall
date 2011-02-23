@@ -51,7 +51,7 @@
 		\n<b>Utiliser DroidWall:</b>
 		\n<b>1.</b> Cliquez sur <b>Mode</b> pour choisir un filtrage par <i>Liste Blanche</i> ou par <i>Liste Noire</i>.
 		\n<b>2.</b> Sélectionnez les applications que vous souhaitez bloquer ou autoriser à accèder à internet (selon le filtrage choisi) pour chaque interface (WIFI, 3G).
-		\n<b>3.</b> Ouvrez le menu et activez le Pare-feu. S'il est déjà actif, choisissez juste <b>Appliquer les filtres</b>.
+		\n<b>3.</b> Ouvrez le menu et activez le Pare-feu. S\'il est déjà actif, choisissez juste <b>Appliquer les filtres</b>.
 		\nLes filtres seront sauvegardés et automatiquement restaurés quand vous redémarrerez votre téléphone.
 		\nSi vous voulez vérifier les filtres actifs, choisissez <b>Voir les Filtres</b> dans le menu.
 		\n
@@ -63,7 +63,7 @@
 		\nDroidWall enregistrera alors chaque application bloquée. Vous pouvez lire les journaux en ouvrant le menu et en choisissant <b>Plus -> Voir les Journaux</b>.
 		\n
 		\n<b>Vérrouillage par Mot de Passe</b>
-		\nVous pouvez définir un mot de passe à saisir à l'ouverture de DroidWall en sélectionnant <b>Définir un Mot de Passe</b> dans les options du menu.
+		\nVous pouvez définir un mot de passe à saisir à l\'ouverture de DroidWall en sélectionnant <b>Définir un Mot de Passe</b> dans les options du menu.
 		\nPour supprimer le mot de passe, il suffit de le modifier et de laisser le champ de saisie vide.
 	</string>
 </resources>
