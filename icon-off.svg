@@ -15,7 +15,7 @@
    height="768"
    id="svg2"
    inkscape:version="0.48.0 r9654"
-   sodipodi:docname="droidwall.svg">
+   sodipodi:docname="icon-off.svg">
   <sodipodi:namedview
      pagecolor="#ffffff"
      bordercolor="#666666"
@@ -25,18 +25,19 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1152"
-     inkscape:window-height="835"
+     inkscape:window-width="1280"
+     inkscape:window-height="908"
      id="namedview44"
      showgrid="true"
-     inkscape:zoom="0.37630208"
-     inkscape:cx="-1.8134268"
-     inkscape:cy="373.77859"
-     inkscape:window-x="1152"
-     inkscape:window-y="0"
+     inkscape:zoom="1.064343"
+     inkscape:cx="323.69554"
+     inkscape:cy="374.01435"
+     inkscape:window-x="0"
+     inkscape:window-y="24"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg2"
-     showguides="false">
+     showguides="false"
+     inkscape:snap-global="false">
     <inkscape:grid
        type="xygrid"
        id="grid3022"
@@ -53,7 +54,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -305,6 +306,12 @@
      inkscape:export-xdpi="5.7965012"
      inkscape:export-ydpi="5.7965012"
      inkscape:connector-curvature="0" />
+  <path
+     style="fill:#cccccc;stroke:#b3b3b3;stroke-width:6.404;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+     d="m 160.00185,447.01984 c 18.53755,52.49374 45.54971,95.40907 66.57632,132.8574 L 644.36088,251.82437 c 1.66352,-15.96263 1.44625,-35.71473 -4.3627,-66.73325 -40.34794,-11.87015 -74.66173,-24.95607 -102.48283,-39.35019 z"
+     id="path3021"
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="cccccc" />
   <path
      d="m 106.92164,157.66454 63.90508,-18.2586 48.68961,-19.78013 57.81889,-33.474111 48.68958,-38.038731 36.51719,-24.344793 44.12495,-1.52156 39.56029,24.344794 76.07748,56.297341 88.24988,45.64649 59.34045,21.3017 1.52156,202.36611 L 610.55459,544.13816 490.35216,699.33624 389.92989,744.98273 286.46451,699.33624 199.73618,603.47861 125.18023,451.32365 100.83544,277.86697 z"
      id="path4253"
