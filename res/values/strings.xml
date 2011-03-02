@@ -53,7 +53,7 @@
 		\n<b>2.</b> Mark the applications that you want to block or allow (depending on the selected mode), for each interface.
 		\n<b>3.</b> Open the menu and enable the firewall. If the firewall is already enabled, just select <b>Apply rules</b>.
 		\nThe rules will be saved and automatically restored when you restart your phone.
-		\nIf want to check all current iptables rules, select <b>Show rules</b> in the menu.
+		\nIf you want to check all current iptables rules, select <b>Show rules</b> in the menu.
 		\n
 		\n<b>Widget:</b>
 		\nTo quickly enable or disable the firewall, add the DroidWall widget to your home screen.
