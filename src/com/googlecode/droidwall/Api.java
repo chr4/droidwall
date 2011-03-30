@@ -131,7 +131,7 @@ public final class Api {
 	 * @return script header
 	 */
 	private static String scriptHeader(Context ctx) {
-		final String dir = ctx.getCacheDir().getAbsolutePath();
+		final String dir = ctx.getDir("bin",0).getAbsolutePath();
 		final String myiptables = dir + (isARMv6() ? "/iptables_g1" : "/iptables_n1");
 		return "" +
 			"IPTABLES=iptables\n" +
@@ -735,7 +735,7 @@ public final class Api {
      * @return the script exit code
      */
 	public static int runScript(Context ctx, String script, StringBuilder res, long timeout, boolean asroot) {
-		final File file = new File(ctx.getCacheDir(), SCRIPT_FILE);
+		final File file = new File(ctx.getDir("bin",0), SCRIPT_FILE);
 		final ScriptRunner runner = new ScriptRunner(file, script, res, asroot);
 		runner.start();
 		try {
@@ -799,19 +799,19 @@ public final class Api {
 		boolean changed = false;
 		try {
 			// Check iptables_g1
-			File file = new File(ctx.getCacheDir(), "iptables_g1");
+			File file = new File(ctx.getDir("bin",0), "iptables_g1");
 			if ((!file.exists()) && isARMv6()) {
 				copyRawFile(ctx, R.raw.iptables_g1, file, "755");
 				changed = true;
 			}
 			// Check iptables_n1
-			file = new File(ctx.getCacheDir(), "iptables_n1");
+			file = new File(ctx.getDir("bin",0), "iptables_n1");
 			if ((!file.exists()) && (!isARMv6())) {
 				copyRawFile(ctx, R.raw.iptables_n1, file, "755");
 				changed = true;
 			}
 			// Check busybox
-			file = new File(ctx.getCacheDir(), "busybox_g1");
+			file = new File(ctx.getDir("bin",0), "busybox_g1");
 			if (!file.exists()) {
 				copyRawFile(ctx, R.raw.busybox_g1, file, "755");
 				changed = true;
