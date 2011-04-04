@@ -252,7 +252,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 			@Override
 			public int compare(DroidApp o1, DroidApp o2) {
 				if ((o1.selected_wifi|o1.selected_3g) == (o2.selected_wifi|o2.selected_3g)) {
-					return o1.names[0].compareTo(o2.names[0]);
+					return String.CASE_INSENSITIVE_ORDER.compare(o1.names[0], o2.names[0]);
 				}
 				if (o1.selected_wifi || o1.selected_3g) return -1;
 				return 1;
