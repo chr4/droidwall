@@ -678,6 +678,7 @@ public final class Api {
 				new DroidApp(android.os.Process.getUidForName("media"), "Media server", false, false),
 				new DroidApp(android.os.Process.getUidForName("vpn"), "VPN networking", false, false),
 				new DroidApp(android.os.Process.getUidForName("shell"), "Linux shell", false, false),
+				new DroidApp(android.os.Process.getUidForName("gps"), "GPS", false, false),
 			};
 			for (int i=0; i<special.length; i++) {
 				app = special[i];
