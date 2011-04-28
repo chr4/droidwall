@@ -30,6 +30,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
@@ -39,7 +41,7 @@ import android.widget.Toast;
 public class StatusWidget extends AppWidgetProvider {
 
 	@Override
-	public void onReceive(Context context, Intent intent) {
+	public void onReceive(final Context context, final Intent intent) {
         super.onReceive(context, intent);
         if (Api.STATUS_CHANGED_MSG.equals(intent.getAction())) {
         	// Broadcast sent when the DroidWall status has changed
@@ -53,28 +55,44 @@ public class StatusWidget extends AppWidgetProvider {
         } else if (Api.TOGGLE_REQUEST_MSG.equals(intent.getAction())) {
         	// Broadcast sent to request toggling DroidWall's status
             final SharedPreferences prefs = context.getSharedPreferences(Api.PREFS_NAME, 0);
-            boolean enabled = !prefs.getBoolean(Api.PREF_ENABLED, true);
+            final boolean enabled = !prefs.getBoolean(Api.PREF_ENABLED, true);
     		final String pwd = prefs.getString(Api.PREF_PASSWORD, "");
     		if (!enabled && pwd.length() != 0) {
         		Toast.makeText(context, "Cannot disable firewall - password defined!", Toast.LENGTH_SHORT).show();
         		return;
     		}
-            if (enabled) {
-            	if (Api.applySavedIptablesRules(context, false)) {
-            		Toast.makeText(context, "Firewall enabled!", Toast.LENGTH_SHORT).show();
-            	} else {
-            		Toast.makeText(context, "Error enabling firewall!", Toast.LENGTH_SHORT).show();
-            		return;
-            	}
-            } else {
-            	if (Api.purgeIptables(context, false)) {
-            		Toast.makeText(context, "Firewall disabled!", Toast.LENGTH_SHORT).show();
-            	} else {
-            		Toast.makeText(context, "Error disabling firewall!", Toast.LENGTH_SHORT).show();
-            		return;
-            	}
-            }
-            Api.setEnabled(context, enabled);
+        	final Handler toaster = new Handler() {
+        		public void handleMessage(Message msg) {
+        			if (msg.arg1 != 0) Toast.makeText(context, msg.arg1, Toast.LENGTH_SHORT).show();
+        		}
+        	};
+			// Start a new thread to change the firewall - this prevents ANR
+			new Thread() {
+				@Override
+				public void run() {
+        			final Message msg = new Message();
+		            if (enabled) {
+		            	if (Api.applySavedIptablesRules(context, false)) {
+		        			msg.arg1 = R.string.toast_enabled;
+		        			toaster.sendMessage(msg);
+		            	} else {
+		        			msg.arg1 = R.string.toast_error_enabling;
+		        			toaster.sendMessage(msg);
+		            		return;
+		            	}
+		            } else {
+		            	if (Api.purgeIptables(context, false)) {
+		        			msg.arg1 = R.string.toast_disabled;
+		        			toaster.sendMessage(msg);
+		            	} else {
+		        			msg.arg1 = R.string.toast_error_disabling;
+		        			toaster.sendMessage(msg);
+		            		return;
+		            	}
+		            }
+		            Api.setEnabled(context, enabled);
+				}
+			}.start();
         }
 	}
     @Override

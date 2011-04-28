@@ -40,7 +40,10 @@
     <string name="mode_whitelist">Lista branca (permitir selecionados)</string>
     <string name="mode_blacklist">Lista negra (bloquear selecionados)</string>
     <string name="toast_bin_installed">DroidWall: Arquivos binários instalados!</string>
-    <string name="toast_error_enabling">"DroidWall: Erro ligando o firewall!"</string>
+    <string name="toast_enabled">DroidWall: Firewall ligado!</string>
+    <string name="toast_error_enabling">DroidWall: Erro ligando o firewall!</string>
+    <string name="toast_disabled">DroidWall: Firewall desligado!</string>
+    <string name="toast_error_disabling">DroidWall: Erro desligando o firewall!</string>
 	<string name="help_dialog_text"><i>Autor: Rodrigo Zechin Rosauro</i>
 		\n<i><a href="http://droidwall.googlecode.com">http://droidwall.googlecode.com</a></i>
 		\n

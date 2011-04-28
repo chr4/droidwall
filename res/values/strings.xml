@@ -40,7 +40,10 @@
     <string name="mode_whitelist">White list (allow selected)</string>
     <string name="mode_blacklist">Black list (block selected)</string>
     <string name="toast_bin_installed">DroidWall: Binary files installed!</string>
-    <string name="toast_error_enabling">"DroidWall: Error enabling firewall!"</string>
+    <string name="toast_enabled">DroidWall: Firewall enabled!</string>
+    <string name="toast_error_enabling">DroidWall: Error enabling firewall!</string>
+    <string name="toast_disabled">DroidWall: Firewall disabled!</string>
+    <string name="toast_error_disabling">DroidWall: Error disabling firewall!</string>
 	<string name="help_dialog_text"><i>Author: Rodrigo Zechin Rosauro</i>
 		\n<i><a href="http://droidwall.googlecode.com">http://droidwall.googlecode.com</a></i>
 		\n
