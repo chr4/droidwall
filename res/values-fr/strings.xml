@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">DroidWall</string>
     <string name="title_enabled">DroidWall v%s</string>
-    <string name="title_disabled">DroidWall v%s (Pare-feu inactif)</string>
+    <string name="title_disabled">DroidWall v%s (pare-feu inactif)</string>
     <string name="showrules">Voir les filtres</string>
     <string name="applyrules">Appliquer les filtres</string>
     <string name="saverules">Sauvegarder les filtres</string>
@@ -36,34 +36,34 @@
     <string name="working">En cours...</string>
     <string name="reading_apps">Lecture des applications installées</string>
     <string name="please_wait">Patientez...</string>
-    <string name="mode_header">Mode: %s</string>
-    <string name="mode_whitelist">Liste Blanche (Autoriser les éléments cochés)</string>
-    <string name="mode_blacklist">Liste Noire (Bloquer les éléments cochés)</string>
-    <string name="toast_bin_installed">DroidWall : Fichiers Binaires installés !</string>
-    <string name="toast_error_enabling">"DroidWall : Erreur pendant l\'activation du Pare-feu !"</string>
-	<string name="help_dialog_text"><i>Auteur: Rodrigo Zechin Rosauro</i>
+    <string name="mode_header">Mode : %s</string>
+    <string name="mode_whitelist">Liste blanche (autoriser les éléments cochés)</string>
+    <string name="mode_blacklist">Liste noire (bloquer les éléments cochés)</string>
+    <string name="toast_bin_installed">DroidWall : fichiers Binaires installés !</string>
+    <string name="toast_error_enabling">"DroidWall : erreur pendant l\'activation du pare-feu !"</string>
+	<string name="help_dialog_text"><i>Auteur : Rodrigo Zechin Rosauro</i>
 		\n<i><a href="../../../../../index.html">http://droidwall.googlecode.com</a></i>
 		\n
-		\n<i>DroidWall - Android Firewall</i> est une application utilisant <b>iptables</b>, le Pare-feu surpuissant de Linux. 
+		\n<i>DroidWall - Android Firewall</i> est une application utilisant <b>iptables</b>, le pare-feu surpuissant de Linux. 
 		DroidWall vous permet d\'empêcher vos applications d\'accèder à internet.
 		\nC\'est la solution parfaite si vous n\'avez pas de forfait "internet illimité", ou si vous souhaitez juste que votre batterie dure plus longtemps.
 		\n
-		\n<b>Utiliser DroidWall:</b>
-		\n<b>1.</b> Cliquez sur <b>Mode</b> pour choisir un filtrage par <i>Liste Blanche</i> ou par <i>Liste Noire</i>.
-		\n<b>2.</b> Sélectionnez les applications que vous souhaitez bloquer ou autoriser à accèder à internet (selon le filtrage choisi) pour chaque interface (WIFI, 3G).
-		\n<b>3.</b> Ouvrez le menu et activez le Pare-feu. S\'il est déjà actif, choisissez juste <b>Appliquer les filtres</b>.
+		\n<b>Utiliser DroidWall :</b>
+		\n<b>1.</b> Cliquez sur <b>Mode</b> pour choisir un filtrage par <i>Liste blanche</i> ou par <i>Liste noire</i>.
+		\n<b>2.</b> Sélectionnez les applications que vous souhaitez bloquer ou autoriser à accèder à internet (selon le filtrage choisi) pour chaque interface (WIFI et réseau mobile).
+		\n<b>3.</b> Ouvrez le menu et activez le pare-feu. S\'il est déjà actif, choisissez juste <b>Appliquer les filtres</b>.
 		\nLes filtres seront sauvegardés et automatiquement restaurés quand vous redémarrerez votre téléphone.
-		\nSi vous voulez vérifier les filtres actifs, choisissez <b>Voir les Filtres</b> dans le menu.
+		\nSi vous voulez vérifier les filtres actifs, choisissez <b>Voir les filtres</b> dans le menu.
 		\n
 		\n<b>Widget :</b>
-		\nPour activer ou désactiver facilement le Pare-feu, ajoutez le widget DroidWall sur votre écran d\'accueil.
+		\nPour activer ou désactiver facilement le pare-feu, ajoutez le widget DroidWall sur votre écran d\'accueil.
 		\n
-		\n<b>Journaux du Pare-feu :</b>
-		\nSi vous voulez voir les applications qui ont été bloquées par DroidWall, ouvrez le menu et choisissez Activer la Journalisation.
-		\nDroidWall enregistrera alors chaque application bloquée. Vous pouvez lire les journaux en ouvrant le menu et en choisissant <b>Plus -> Voir les Journaux</b>.
+		\n<b>Journaux du pare-feu :</b>
+     \nSi vous voulez voir les applications qui ont été bloquées par DroidWall, ouvrez le menu et choisissez <b>Activer la journalisation</b>.
+		\nDroidWall enregistrera alors chaque application bloquée. Vous pouvez lire les journaux en ouvrant le menu et en choisissant <b>Plus -> Voir les journaux</b>.
 		\n
-		\n<b>Vérrouillage par Mot de Passe</b>
-		\nVous pouvez définir un mot de passe à saisir à l\'ouverture de DroidWall en sélectionnant <b>Définir un Mot de Passe</b> dans les options du menu.
+		\n<b>Vérrouillage par mot de passe</b>
+		\nVous pouvez définir un mot de passe à saisir à l\'ouverture de DroidWall en sélectionnant <b>Définir un mot de passe</b> dans les options du menu.
 		\nPour supprimer le mot de passe, il suffit de le modifier et de laisser le champ de saisie vide.
 	</string>
 </resources>
