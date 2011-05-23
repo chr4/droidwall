@@ -54,7 +54,7 @@ import android.widget.Toast;
  */
 public final class Api {
 	/** application version string */
-	public static final String VERSION = "1.5.1";
+	public static final String VERSION = "1.5.2-dev";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
 	/** special application UID used to indicate the Linux Kernel */
@@ -175,7 +175,7 @@ public final class Api {
 			return false;
 		}
 		assertBinaries(ctx, showErrors);
-		final String ITFS_WIFI[] = {"tiwlan+", "wlan+", "eth+"};
+		final String ITFS_WIFI[] = {"tiwlan+", "wlan+", "eth+", "ra+"};
 		final String ITFS_3G[] = {"rmnet+","pdp+","ppp+","uwbr+","wimax+","vsnet+"};
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		final boolean whitelist = prefs.getString(PREF_MODE, MODE_WHITELIST).equals(MODE_WHITELIST);
@@ -193,8 +193,9 @@ public final class Api {
 				"$IPTABLES -L droidwall-3g >/dev/null 2>/dev/null || $IPTABLES --new droidwall-3g || exit 3\n" +
 				"$IPTABLES -L droidwall-wifi >/dev/null 2>/dev/null || $IPTABLES --new droidwall-wifi || exit 4\n" +
 				"$IPTABLES -L droidwall-reject >/dev/null 2>/dev/null || $IPTABLES --new droidwall-reject || exit 5\n" +
-				"# Add droidwall chain to OUTPUT chain if necessary\n" +
+				"# Add droidwall chain to OUTPUT and INPUT chains if necessary\n" +
 				"$IPTABLES -L OUTPUT | $GREP -q droidwall || $IPTABLES -A OUTPUT -j droidwall || exit 6\n" +
+				"$IPTABLES -L INPUT | $GREP -q droidwall || $IPTABLES -A INPUT -j droidwall || exit 6\n" +
 				"# Flush existing rules\n" +
 				"$IPTABLES -F droidwall || exit 7\n" +
 				"$IPTABLES -F droidwall-3g || exit 8\n" +
