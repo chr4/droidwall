@@ -193,9 +193,8 @@ public final class Api {
 				"$IPTABLES -L droidwall-3g >/dev/null 2>/dev/null || $IPTABLES --new droidwall-3g || exit 3\n" +
 				"$IPTABLES -L droidwall-wifi >/dev/null 2>/dev/null || $IPTABLES --new droidwall-wifi || exit 4\n" +
 				"$IPTABLES -L droidwall-reject >/dev/null 2>/dev/null || $IPTABLES --new droidwall-reject || exit 5\n" +
-				"# Add droidwall chain to OUTPUT and INPUT chains if necessary\n" +
+				"# Add droidwall chain to OUTPUT chain if necessary\n" +
 				"$IPTABLES -L OUTPUT | $GREP -q droidwall || $IPTABLES -A OUTPUT -j droidwall || exit 6\n" +
-				"$IPTABLES -L INPUT | $GREP -q droidwall || $IPTABLES -A INPUT -j droidwall || exit 6\n" +
 				"# Flush existing rules\n" +
 				"$IPTABLES -F droidwall || exit 7\n" +
 				"$IPTABLES -F droidwall-3g || exit 8\n" +
