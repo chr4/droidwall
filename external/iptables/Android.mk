@@ -85,7 +85,6 @@ PF_EXT_SLIB+=TAG
 
 EXT_FUNC+=$(foreach T,$(PF_EXT_SLIB),ipt_$(T))
 
-# Yixiang - Porting
 NEW_PF_EXT_SLIB:=comment conntrack connmark dscp tcpmss esp
 NEW_PF_EXT_SLIB+=hashlimit helper iprange length limit mac multiport
 NEW_PF_EXT_SLIB+=owner physdev pkttype policy sctp standard state tcp
@@ -94,23 +93,19 @@ NEW_PF_EXT_SLIB+=NFQUEUE NOTRACK
 
 EXT_FUNC+=$(foreach N,$(NEW_PF_EXT_SLIB),xt_$(N))
 
-# generated headers
-
-GEN_INITEXT:= $(intermediates)/extensions/gen_initext4.c
-$(GEN_INITEXT): PRIVATE_PATH := $(LOCAL_PATH)
-$(GEN_INITEXT): PRIVATE_CUSTOM_TOOL = $(PRIVATE_PATH)/extensions/create_initext4 "$(EXT_FUNC)" > $@
-$(GEN_INITEXT): PRIVATE_MODULE := $(LOCAL_MODULE)
-$(GEN_INITEXT):
-	$(transform-generated-source)
-
-$(intermediates)/extensions/initext4.o : $(GEN_INITEXT)
-
-LOCAL_GENERATED_SOURCES:= $(GEN_INITEXT)
+# Generated source: gen_initext4.c
+FORCE:
+	echo FORCE
+GEN_INITEXT:= extensions/gen_initext4.c
+LOCAL_GEN_INITEXT:= $(LOCAL_PATH)/$(GEN_INITEXT)
+$(LOCAL_GEN_INITEXT): FORCE
+	$(LOCAL_PATH)/extensions/create_initext4 "$(EXT_FUNC)" > $@
+$(intermediates)/extensions/gen_initext4.o: $(GEN_INITEXT)
 
 LOCAL_SRC_FILES:= \
 	$(foreach T,$(PF_EXT_SLIB),extensions/libipt_$(T).c) \
 	$(foreach N,$(NEW_PF_EXT_SLIB),extensions/libxt_$(N).c) \
-	extensions/initext4.c
+	$(GEN_INITEXT)
 
 
 LOCAL_STATIC_LIBRARIES := \
