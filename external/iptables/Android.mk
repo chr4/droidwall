@@ -1,15 +1,8 @@
-ifneq ($(TARGET_SIMULATOR),true)
-  BUILD_IPTABLES := 1
-endif
-ifeq ($(BUILD_IPTABLES),1)
-
 LOCAL_PATH:= $(call my-dir)
 
 #
-# Build libraries
-#
-
 # libxtables
+#
 
 include $(CLEAR_VARS)
 
@@ -19,8 +12,6 @@ LOCAL_C_INCLUDES:= \
 
 LOCAL_CFLAGS:=-DNO_SHARED_LIBS
 LOCAL_CFLAGS+=-DXTABLES_INTERNAL
-LOCAL_CFLAGS+=-DIPTABLES_VERSION=\"1.4.10\" 
-LOCAL_CFLAGS+=-DXTABLES_VERSION=\"1.4.10\" # -DIPT_LIB_DIR=\"$(IPT_LIBDIR)\"
 LOCAL_CFLAGS+=-DXTABLES_LIBDIR
 
 LOCAL_SRC_FILES:= \
@@ -32,8 +23,9 @@ LOCAL_MODULE:=libxtables
 include $(BUILD_STATIC_LIBRARY)
 
 
-
+#
 # libip4tc
+#
 
 include $(CLEAR_VARS)
 
@@ -60,7 +52,6 @@ LOCAL_MODULE_TAGS:=
 LOCAL_MODULE:=libext4
 
 # LOCAL_MODULE_CLASS must be defined before calling $(local-intermediates-dir)
-#
 LOCAL_MODULE_CLASS := STATIC_LIBRARIES
 intermediates := $(call local-intermediates-dir)
 
@@ -71,25 +62,19 @@ LOCAL_C_INCLUDES:= \
 
 LOCAL_CFLAGS:=-DNO_SHARED_LIBS
 LOCAL_CFLAGS+=-DXTABLES_INTERNAL
-LOCAL_CFLAGS+=-D_INIT=$*_init
-LOCAL_CFLAGS+=-DIPTABLES_VERSION=\"1.4.10\"
-LOCAL_CFLAGS+=-DXTABLES_VERSION=\"1.4.10\"
 
-PF_EXT_SLIB:=ah addrtype ecn  
-PF_EXT_SLIB+=icmp #2mark
-PF_EXT_SLIB+=realm 
-PF_EXT_SLIB+=ttl unclean DNAT LOG #DSCP ECN
-PF_EXT_SLIB+=MASQUERADE MIRROR NETMAP REDIRECT REJECT #MARK
-PF_EXT_SLIB+=SAME SNAT ULOG # TOS TCPMSS TTL
-PF_EXT_SLIB+=TAG
+# List of "libipt_*" extensions to compile
+PF_EXT_SLIB := addrtype ah CLUSTERIP DNAT ecn ECN icmp LOG MASQUERADE MIRROR NETMAP realm REDIRECT REJECT SAME
+PF_EXT_SLIB += SNAT ttl TTL ULOG unclean
+#PF_EXT_SLIB += set SET
 
 EXT_FUNC+=$(foreach T,$(PF_EXT_SLIB),ipt_$(T))
 
-NEW_PF_EXT_SLIB:=comment conntrack connmark dscp tcpmss esp
-NEW_PF_EXT_SLIB+=hashlimit helper iprange length limit mac multiport
-NEW_PF_EXT_SLIB+=owner physdev pkttype policy sctp standard state tcp
-NEW_PF_EXT_SLIB+=tos udp CLASSIFY CONNMARK
-NEW_PF_EXT_SLIB+=NFQUEUE NOTRACK
+# List of "libxt_*" extensions to compile
+NEW_PF_EXT_SLIB := CLASSIFY cluster comment connbytes connlimit connmark CONNMARK CONNSECMARK conntrack dccp dscp
+NEW_PF_EXT_SLIB += DSCP esp hashlimit helper iprange length limit mac mark MARK multiport NFLOG NFQUEUE NOTRACK
+NEW_PF_EXT_SLIB += osf owner physdev pkttype policy quota rateest RATEEST recent sctp SECMARK socket standard
+NEW_PF_EXT_SLIB += state statistic string tcp tcpmss TCPMSS time tos TOS TPROXY TRACE u32 udp
 
 EXT_FUNC+=$(foreach N,$(NEW_PF_EXT_SLIB),xt_$(N))
 
@@ -101,6 +86,7 @@ LOCAL_GEN_INITEXT:= $(LOCAL_PATH)/$(GEN_INITEXT)
 $(LOCAL_GEN_INITEXT): FORCE
 	$(LOCAL_PATH)/extensions/create_initext4 "$(EXT_FUNC)" > $@
 $(intermediates)/extensions/gen_initext4.o: $(GEN_INITEXT)
+
 
 LOCAL_SRC_FILES:= \
 	$(foreach T,$(PF_EXT_SLIB),extensions/libipt_$(T).c) \
@@ -125,9 +111,6 @@ LOCAL_C_INCLUDES:= \
 
 LOCAL_CFLAGS:=-DNO_SHARED_LIBS
 LOCAL_CFLAGS+=-DXTABLES_INTERNAL
-LOCAL_CFLAGS+=-DIPTABLES_VERSION=\"1.4.10\" 
-LOCAL_CFLAGS+=-DXTABLES_VERSION=\"1.4.10\" # -DIPT_LIB_DIR=\"$(IPT_LIBDIR)\"
-#LOCAL_CFLAGS+=-DIPT_LIB_DIR=\"$(IPT_LIBDIR)\"
 
 LOCAL_SRC_FILES:= \
 	iptables.c \
@@ -144,4 +127,3 @@ LOCAL_STATIC_LIBRARIES := \
 
 include $(BUILD_EXECUTABLE)
 
-endif
