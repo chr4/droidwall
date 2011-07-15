@@ -1,7 +1,7 @@
 /**
  * Dialog displayed when the "Help" menu option is selected
  * 
- * Copyright (C) 2009-2010  Rodrigo Zechin Rosauro
+ * Copyright (C) 2009-2011  Rodrigo Zechin Rosauro
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
