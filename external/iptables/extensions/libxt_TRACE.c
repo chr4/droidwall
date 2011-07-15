@@ -15,7 +15,7 @@ static struct xtables_target trace_target = {
 	.userspacesize	= XT_ALIGN(0),
 };
 
-void _init(void)
+void libxt_TRACE_init(void)
 {
 	xtables_register_target(&trace_target);
 }

@@ -164,7 +164,7 @@ static struct xtables_target ecn_tg_reg = {
 	.extra_opts	= ECN_opts,
 };
 
-void _init(void)
+void libipt_ECN_init(void)
 {
 	xtables_register_target(&ecn_tg_reg);
 }

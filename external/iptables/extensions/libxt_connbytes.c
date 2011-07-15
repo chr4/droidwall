@@ -194,7 +194,7 @@ static struct xtables_match connbytes_match = {
 	.extra_opts	= connbytes_opts,
 };
 
-void _init(void)
+void libxt_connbytes_init(void)
 {
 	xtables_register_match(&connbytes_match);
 }

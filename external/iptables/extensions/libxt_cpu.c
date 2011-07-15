@@ -93,7 +93,7 @@ static struct xtables_match cpu_match = {
 	.extra_opts	= cpu_opts,
 };
 
-void _init(void)
+void libxt_cpu_init(void)
 {
 	xtables_register_match(&cpu_match);
 }

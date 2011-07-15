@@ -448,7 +448,7 @@ static struct xtables_match rateest_mt_reg = {
 	.extra_opts	= rateest_opts,
 };
 
-void _init(void)
+void libxt_rateest_init(void)
 {
 	xtables_register_match(&rateest_mt_reg);
 }

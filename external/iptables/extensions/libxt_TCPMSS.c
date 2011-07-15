@@ -148,7 +148,7 @@ static struct xtables_target tcpmss_target6 = {
 	.extra_opts	= TCPMSS_opts,
 };
 
-void _init(void)
+void libxt_TCPMSS_init(void)
 {
 	xtables_register_target(&tcpmss_target);
 	xtables_register_target(&tcpmss_target6);

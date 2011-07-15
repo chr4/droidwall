@@ -359,7 +359,7 @@ static struct xtables_match ipvs_matches_reg[] = {
 	},
 };
 
-void _init(void)
+void libxt_ipvs_init(void)
 {
 	xtables_register_matches(ipvs_matches_reg,
 				 ARRAY_SIZE(ipvs_matches_reg));

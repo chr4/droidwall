@@ -479,7 +479,7 @@ static struct xtables_match time_match = {
 	.extra_opts    = time_opts,
 };
 
-void _init(void)
+void libxt_time_init(void)
 {
 	xtables_register_match(&time_match);
 }

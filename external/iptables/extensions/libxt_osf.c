@@ -149,7 +149,7 @@ static struct xtables_match osf_match = {
 	.family		= NFPROTO_IPV4
 };
 
-void _init(void)
+void libxt_osf_init(void)
 {
 	xtables_register_match(&osf_match);
 }

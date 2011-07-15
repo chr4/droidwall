@@ -175,7 +175,7 @@ static struct xtables_match statistic_match = {
 	.extra_opts	= statistic_opts,
 };
 
-void _init(void)
+void libxt_statistic_init(void)
 {
 	xtables_register_match(&statistic_match);
 }

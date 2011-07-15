@@ -244,7 +244,7 @@ static struct xtables_target clusterip_tg_reg = {
 	.extra_opts	= CLUSTERIP_opts,
 };
 
-void _init(void)
+void libipt_CLUSTERIP_init(void)
 {
 	xtables_register_target(&clusterip_tg_reg);
 }

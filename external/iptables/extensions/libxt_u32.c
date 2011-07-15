@@ -279,7 +279,7 @@ static struct xtables_match u32_match = {
 	.extra_opts    = u32_opts,
 };
 
-void _init(void)
+void libxt_u32_init(void)
 {
 	xtables_register_match(&u32_match);
 }

@@ -195,7 +195,7 @@ static struct xtables_target tee_tg6_reg = {
 	.extra_opts    = tee_tg_opts,
 };
 
-void _init(void)
+void libxt_TEE_init(void)
 {
 	xtables_register_target(&tee_tg_reg);
 	xtables_register_target(&tee_tg6_reg);

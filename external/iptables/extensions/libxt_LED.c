@@ -149,7 +149,7 @@ static struct xtables_target led_tg_reg = {
 	.save          = LED_save,
 };
 
-void _init(void)
+void libxt_LED_init(void)
 {
 	xtables_register_target(&led_tg_reg);
 }

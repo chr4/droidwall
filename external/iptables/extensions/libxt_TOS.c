@@ -240,7 +240,7 @@ static struct xtables_target tos_tg_reg[] = {
 	},
 };
 
-void _init(void)
+void libxt_TOS_init(void)
 {
 	xtables_register_targets(tos_tg_reg, ARRAY_SIZE(tos_tg_reg));
 }

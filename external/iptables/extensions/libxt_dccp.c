@@ -349,7 +349,7 @@ static struct xtables_match dccp_match = {
 	.extra_opts	= dccp_opts,
 };
 
-void _init(void)
+void libxt_dccp_init(void)
 {
 	xtables_register_match(&dccp_match);
 }

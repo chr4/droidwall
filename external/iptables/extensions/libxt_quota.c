@@ -91,8 +91,7 @@ static struct xtables_match quota_match = {
 	.extra_opts	= quota_opts,
 };
 
-void
-_init(void)
+void libxt_quota_init(void)
 {
 	xtables_register_match(&quota_match);
 }

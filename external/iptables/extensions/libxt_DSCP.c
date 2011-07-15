@@ -144,7 +144,7 @@ static struct xtables_target dscp_target = {
 	.extra_opts	= DSCP_opts,
 };
 
-void _init(void)
+void libxt_DSCP_init(void)
 {
 	xtables_register_target(&dscp_target);
 }

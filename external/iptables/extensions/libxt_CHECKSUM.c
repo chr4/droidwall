@@ -91,7 +91,7 @@ static struct xtables_target checksum_tg_reg = {
 	.extra_opts	= CHECKSUM_opts,
 };
 
-void _init(void)
+void libxt_CHECKSUM_init(void)
 {
 	xtables_register_target(&checksum_tg_reg);
 }

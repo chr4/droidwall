@@ -233,7 +233,7 @@ static struct xtables_match cluster_mt_reg = {
 	.extra_opts	= cluster_opts,
 };
 
-void _init(void)
+void libxt_cluster_init(void)
 {
 	xtables_register_match(&cluster_mt_reg);
 }

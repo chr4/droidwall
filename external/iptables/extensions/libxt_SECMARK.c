@@ -108,7 +108,7 @@ static struct xtables_target secmark_target = {
 	.extra_opts	= SECMARK_opts,
 };
 
-void _init(void)
+void libxt_SECMARK_init(void)
 {
 	xtables_register_target(&secmark_target);
 }

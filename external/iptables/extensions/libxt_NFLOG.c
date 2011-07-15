@@ -153,7 +153,7 @@ static struct xtables_target nflog_target = {
 	.extra_opts	= NFLOG_opts,
 };
 
-void _init(void)
+void libxt_NFLOG_init(void)
 {
 	xtables_register_target(&nflog_target);
 }

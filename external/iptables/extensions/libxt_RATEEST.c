@@ -217,7 +217,7 @@ static struct xtables_target rateest_tg_reg = {
 	.extra_opts	= RATEEST_opts,
 };
 
-void _init(void)
+void libxt_RATEEST_init(void)
 {
 	xtables_register_target(&rateest_tg_reg);
 }

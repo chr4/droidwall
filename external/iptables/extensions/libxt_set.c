@@ -245,7 +245,7 @@ static struct xtables_match set_mt_reg[] = {
 	},
 };
 
-void _init(void)
+void libxt_set_init(void)
 {
 	xtables_register_matches(set_mt_reg, ARRAY_SIZE(set_mt_reg));
 }

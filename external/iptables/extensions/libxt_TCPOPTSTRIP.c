@@ -192,7 +192,7 @@ static struct xtables_target tcpoptstrip_tg_reg = {
 	.extra_opts    = tcpoptstrip_tg_opts,
 };
 
-void _init(void)
+void libxt_TCPOPTSTRIP_init(void)
 {
 	xtables_register_target(&tcpoptstrip_tg_reg);
 }

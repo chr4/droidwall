@@ -144,7 +144,7 @@ static struct xtables_target tproxy_tg_reg = {
 	.extra_opts    = tproxy_tg_opts,
 };
 
-void _init(void)
+void libxt_TPROXY_init(void)
 {
 	xtables_register_target(&tproxy_tg_reg);
 }

@@ -211,7 +211,7 @@ static struct xtables_match connlimit_mt_reg[] = {
 	},
 };
 
-void _init(void)
+void libxt_connlimit_init(void)
 {
 	xtables_register_matches(connlimit_mt_reg, ARRAY_SIZE(connlimit_mt_reg));
 }

@@ -179,7 +179,7 @@ static struct xtables_match mark_mt_reg[] = {
 	},
 };
 
-void _init(void)
+void libxt_mark_init(void)
 {
 	xtables_register_matches(mark_mt_reg, ARRAY_SIZE(mark_mt_reg));
 }

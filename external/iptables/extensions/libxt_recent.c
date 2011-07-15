@@ -228,7 +228,7 @@ static struct xtables_match recent_mt_reg = {
     .extra_opts    = recent_opts,
 };
 
-void _init(void)
+void libxt_recent_init(void)
 {
 	xtables_register_match(&recent_mt_reg);
 }

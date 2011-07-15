@@ -187,7 +187,7 @@ static struct xtables_target ct_target = {
 	.extra_opts	= ct_opts,
 };
 
-void _init(void)
+void libxt_CT_init(void)
 {
 	xtables_register_target(&ct_target);
 }

@@ -341,7 +341,7 @@ static struct xtables_target mark_tg_reg[] = {
 	},
 };
 
-void _init(void)
+void libxt_MARK_init(void)
 {
 	xtables_register_targets(mark_tg_reg, ARRAY_SIZE(mark_tg_reg));
 }

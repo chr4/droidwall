@@ -281,7 +281,7 @@ static struct xtables_target set_tg_reg[] = {
 	},
 };
 
-void _init(void)
+void libxt_SET_init(void)
 {
 	xtables_register_targets(set_tg_reg, ARRAY_SIZE(set_tg_reg));
 }

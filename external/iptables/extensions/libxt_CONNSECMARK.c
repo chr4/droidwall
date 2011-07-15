@@ -122,7 +122,7 @@ static struct xtables_target connsecmark_target = {
 	.extra_opts	= CONNSECMARK_opts,
 };
 
-void _init(void)
+void libxt_CONNSECMARK_init(void)
 {
 	xtables_register_target(&connsecmark_target);
 }

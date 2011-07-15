@@ -152,7 +152,7 @@ static struct xtables_target ttl_tg_reg = {
 	.extra_opts	= TTL_opts,
 };
 
-void _init(void)
+void libipt_TTL_init(void)
 {
 	xtables_register_target(&ttl_tg_reg);
 }
