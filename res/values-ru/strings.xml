@@ -40,10 +40,13 @@
     <string name="mode_whitelist">Белый список (разрешить выбранные)</string>
     <string name="mode_blacklist">Черный список (блокировать выбранные)</string>
     <string name="toast_bin_installed">DroidWall: Исполняемые файлы установлены!</string>
+    <string name="toast_enabled">DroidWall:  Брандмауэр включен!</string>
     <string name="toast_error_enabling">DroidWall: Ошибка включения брандмауэра!</string>
+    <string name="toast_disabled">DroidWall:  Брандмауэр отключен!</string>
+    <string name="toast_error_disabling">DroidWall: Ошибка отключения брандмауэра!</string>
         <string name="help_dialog_text"><i>Автор: Rodrigo Zechin Rosauro</i>
                 \n<i><a href="http://droidwall.googlecode.com">http://droidwall.googlecode.com</a></i>
-                \n
+                \n<i>Перевод: Евгений Мартыненко</i>\n
                 \n<i>DroidWall - Android Firewall</i> является внешним приложением интерфейса для мощного брандмауэра Linux - <b>iptables</b>.
                 Он позволяет ограничить круг приложений имеющих доступ к сетям передачи данных.
                 \nЭто идеальное решение, если у вас не безлимитный тарифный план, или Вы просто хотите сэкономить заряд вашей батареи.
@@ -64,6 +67,6 @@
                 \n
                 \n<b>Пароль блокировки:</b>
                 \nВы можете установить пароль блокировки для DroidWall с помощью параметра меню <b>Установить пароль</b>.
-                \nДля удаления пароля блокировки, просто оставьте поле для ввода пустым.
+                \nДля удаления пароля блокировки, просто оставьте поле для ввода пустым
         </string>
 </resources>
