@@ -39,8 +39,11 @@
     <string name="mode_header">Modo: %s</string>
     <string name="mode_whitelist">White list (abilita selezionati)</string>
     <string name="mode_blacklist">Black list (blocca selezionati)</string>
-    <string name="toast_bin_installed">DroidWall: File binari installati!</string>
-    <string name="toast_error_enabling">"DroidWall: Errore abilitazione firewall!"</string>
+    <string name="toast_bin_installed">DroidWall: File binari installati!</string>    
+    <string name="toast_enabled">DroidWall: Firewall abilitato!</string>
+    <string name="toast_error_enabling">DroidWall: Errore di abilitazione firewall!</string>
+    <string name="toast_disabled">DroidWall: Firewall disabilitato!</string>
+    <string name="toast_error_disabling">DroidWall: Errore di disabilitare firewall!</string>
 	<string name="help_dialog_text"><i>Autore: Rodrigo Zechin Rosauro</i>
 		\n<i><a href="http://droidwall.googlecode.com">http://droidwall.googlecode.com</a></i>
 		\n
