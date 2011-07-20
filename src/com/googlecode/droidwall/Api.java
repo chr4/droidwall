@@ -430,7 +430,7 @@ public final class Api {
     		final StringBuilder res = new StringBuilder();
 			runScriptAsRoot(ctx, scriptHeader(ctx) +
 								 "$ECHO $IPTABLES\n" +
-								 "$IPTABLES -L -v\n", res);
+								 "$IPTABLES -L -v -n\n", res);
 			alert(ctx, res);
 		} catch (Exception e) {
 			alert(ctx, "error: " + e);
@@ -771,7 +771,7 @@ public final class Api {
 		try {
 			// Check iptables_armv5
 			File file = new File(ctx.getDir("bin",0), "iptables_armv5");
-			if (!file.exists()) {
+			if (!file.exists() || file.length()!=198652) {
 				copyRawFile(ctx, R.raw.iptables_armv5, file, "755");
 				changed = true;
 			}
