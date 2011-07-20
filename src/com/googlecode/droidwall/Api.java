@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.util.Arrays;
@@ -982,21 +981,36 @@ public final class Api {
 					// Create the "sh" request to run the script
 					exec = Runtime.getRuntime().exec("sh "+abspath);
 				}
-				InputStreamReader r = new InputStreamReader(exec.getInputStream());
-				final char buf[] = new char[1024];
+				final InputStream stdout = exec.getInputStream();
+				final InputStream stderr = exec.getErrorStream();
+				final byte buf[] = new byte[8192];
 				int read = 0;
-				// Consume the "stdout"
-				while ((read=r.read(buf)) != -1) {
-					if (res != null) res.append(buf, 0, read);
+				while (true) {
+					final Process localexec = exec;
+					if (localexec == null) break;
+					try {
+						// get the process exit code - will raise IllegalThreadStateException if still running
+						this.exitcode = localexec.exitValue();
+					} catch (IllegalThreadStateException ex) {
+						// The process is still running
+					}
+					// Read stdout
+					if (stdout.available() > 0) {
+						read = stdout.read(buf);
+						if (res != null) res.append(new String(buf, 0, read));
+					}
+					// Read stderr
+					if (stderr.available() > 0) {
+						read = stderr.read(buf);
+						if (res != null) res.append(new String(buf, 0, read));
+					}
+					if (this.exitcode != -1) {
+						// finished
+						break;
+					}
+					// Sleep for the next round
+					Thread.sleep(50);
 				}
-				// Consume the "stderr"
-				r = new InputStreamReader(exec.getErrorStream());
-				read=0;
-				while ((read=r.read(buf)) != -1) {
-					if (res != null) res.append(buf, 0, read);
-				}
-				// get the process exit code
-				if (exec != null) this.exitcode = exec.waitFor();
 			} catch (InterruptedException ex) {
 				if (res != null) res.append("\nOperation timed-out");
 			} catch (Exception ex) {
