@@ -53,7 +53,7 @@ import android.widget.Toast;
  */
 public final class Api {
 	/** application version string */
-	public static final String VERSION = "1.5.2";
+	public static final String VERSION = "1.5.3-dev";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
 	/** special application UID used to indicate the Linux Kernel */
@@ -62,13 +62,14 @@ public final class Api {
 	private static final String SCRIPT_FILE = "droidwall.sh";
 	
 	// Preferences
-	public static final String PREFS_NAME 		= "DroidWallPrefs";
-	public static final String PREF_3G_UIDS		= "AllowedUids3G";
-	public static final String PREF_WIFI_UIDS	= "AllowedUidsWifi";
-	public static final String PREF_PASSWORD 	= "Password";
-	public static final String PREF_MODE 		= "BlockMode";
-	public static final String PREF_ENABLED		= "Enabled";
-	public static final String PREF_LOGENABLED	= "LogEnabled";
+	public static final String PREFS_NAME 			= "DroidWallPrefs";
+	public static final String PREF_3G_UIDS			= "AllowedUids3G";
+	public static final String PREF_WIFI_UIDS		= "AllowedUidsWifi";
+	public static final String PREF_PASSWORD 		= "Password";
+	public static final String PREF_CUSTOMSCRIPT 	= "CustomScript";
+	public static final String PREF_MODE 			= "BlockMode";
+	public static final String PREF_ENABLED			= "Enabled";
+	public static final String PREF_LOGENABLED		= "LogEnabled";
 	// Modes
 	public static final String MODE_WHITELIST = "whitelist";
 	public static final String MODE_BLACKLIST = "blacklist";
@@ -180,6 +181,7 @@ public final class Api {
 		final boolean whitelist = prefs.getString(PREF_MODE, MODE_WHITELIST).equals(MODE_WHITELIST);
 		final boolean blacklist = !whitelist;
 		final boolean logenabled = ctx.getSharedPreferences(PREFS_NAME, 0).getBoolean(PREF_LOGENABLED, false);
+		final String customScript = ctx.getSharedPreferences(Api.PREFS_NAME, 0).getString(Api.PREF_CUSTOMSCRIPT, "");
 
     	final StringBuilder script = new StringBuilder();
 		try {
@@ -212,6 +214,11 @@ public final class Api {
 					"# Create the reject rule (log disabled)\n" +
 					"$IPTABLES -A droidwall-reject -j REJECT || exit 11\n" +
 				"");
+			}
+			if (customScript.length() > 0) {
+				script.append("\n# BEGIN OF CUSTOM SCRIPT (user-defined)\n");
+				script.append(customScript);
+				script.append("\n# END OF CUSTOM SCRIPT (user-defined)\n\n");
 			}
 			if (whitelist && logenabled) {
 				script.append("# Allow DNS lookups on white-list for a better logging (ignore errors)\n");

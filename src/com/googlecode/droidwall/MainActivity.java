@@ -37,20 +37,21 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.CompoundButton.OnCheckedChangeListener;
 
 import com.googlecode.droidwall.Api.DroidApp;
 
@@ -70,9 +71,11 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	private static final int MENU_SHOWRULES	= 6;
 	private static final int MENU_CLEARLOG	= 7;
 	private static final int MENU_SETPWD	= 8;
+	private static final int MENU_SETCUSTOM = 9;
 	
 	/** progress dialog instance */
-	private ListView listview;
+	private ListView listview = null;
+	private boolean dirty = false;
 	
     /** Called when the activity is first created. */
     @Override
@@ -246,6 +249,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
      * Show the list of applications
      */
     private void showApplications() {
+    	this.dirty = false;
         final DroidApp[] apps = Api.getApps(this);
         // Sort applications - selected first, then alphabetically
         Arrays.sort(apps, new Comparator<DroidApp>() {
@@ -270,9 +274,9 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
        				entry.box_wifi = (CheckBox) convertView.findViewById(R.id.itemcheck_wifi);
        				entry.box_3g = (CheckBox) convertView.findViewById(R.id.itemcheck_3g);
        				entry.text = (TextView) convertView.findViewById(R.id.itemtext);
-       				convertView.setTag(entry);
        				entry.box_wifi.setOnCheckedChangeListener(MainActivity.this);
        				entry.box_3g.setOnCheckedChangeListener(MainActivity.this);
+       				convertView.setTag(entry);
         		} else {
         			// Convert an existing view
         			entry = (ListEntry) convertView.getTag();
@@ -301,6 +305,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     	menu.add(0, MENU_SHOWRULES, 0, R.string.showrules).setIcon(R.drawable.show);
     	menu.add(0, MENU_CLEARLOG, 0, R.string.clear_log).setIcon(android.R.drawable.ic_menu_close_clear_cancel);
     	menu.add(0, MENU_SETPWD, 0, R.string.setpwd).setIcon(android.R.drawable.ic_lock_lock);
+    	menu.add(0, MENU_SETCUSTOM, 0, R.string.set_custom_script);
     	
     	return true;
     }
@@ -360,6 +365,9 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     	case MENU_CLEARLOG:
     		clearLog();
     		return true;
+    	case MENU_SETCUSTOM:
+    		setCustomScript();
+    		return true;
     	}
     	return false;
     }
@@ -390,6 +398,49 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 			}
 		}).show();
 	}
+	
+	/**
+	 * Set a new init script
+	 */
+	private void setCustomScript(){
+		String script = getSharedPreferences(Api.PREFS_NAME, 0).getString(Api.PREF_CUSTOMSCRIPT, "");
+		new CustomScriptDialog(this, script, new android.os.Handler.Callback() {
+			@Override
+			public boolean handleMessage(Message msg) {
+				if (msg.obj != null ){
+					setCustomScript((String)msg.obj);
+				}
+				return false;
+			}
+		}).show();
+	}
+	
+    /**
+     * Set a new init script
+     * @param script new script (empty to remove a script)
+     */
+	private void setCustomScript(String script) {
+		final Editor editor = getSharedPreferences(Api.PREFS_NAME, 0).edit();
+		// Remove unnecessary white-spaces, also replace '\r\n' if necessary
+		script = script.trim().replace("\r\n", "\n");
+		editor.putString(Api.PREF_CUSTOMSCRIPT, script);
+		int msgid;
+		if (editor.commit()) {
+			if (script.length() > 0) {
+				msgid = R.string.custom_script_defined;
+			} else {
+				msgid = R.string.custom_script_removed;
+			}
+		} else {
+			msgid = R.string.custom_script_error;
+		}
+		Toast.makeText(MainActivity.this, msgid, Toast.LENGTH_SHORT).show();
+		if (Api.isEnabled(this)) {
+			// If the firewall is enabled, re-apply the rules
+			applyOrSaveRules();
+		}
+	}
+	
 	/**
 	 * Show iptable rules on a dialog
 	 */
@@ -459,6 +510,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 					Api.saveRules(MainActivity.this);
 					Toast.makeText(MainActivity.this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
 				}
+				MainActivity.this.dirty = false;
 			}
 		};
 		handler.sendEmptyMessageDelayed(0, 100);
@@ -488,18 +540,22 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		final DroidApp app = (DroidApp) buttonView.getTag();
 		if (app != null) {
 			switch (buttonView.getId()) {
-				case R.id.itemcheck_wifi: app.selected_wifi = isChecked; break;
-				case R.id.itemcheck_3g: app.selected_3g = isChecked; break;
+				case R.id.itemcheck_wifi:
+					if (app.selected_wifi != isChecked) {
+						app.selected_wifi = isChecked;
+						this.dirty = true;
+					}
+					break;
+				case R.id.itemcheck_3g:
+					if (app.selected_3g != isChecked) {
+						app.selected_3g = isChecked;
+						this.dirty = true;
+					}
+					break;
 			}
 		}
 	}
 	
-	private static class ListEntry {
-		private CheckBox box_wifi;
-		private CheckBox box_3g;
-		private TextView text;
-	}
-
 	@Override
 	public void onClick(View v) {
 		switch (v.getId()) {
@@ -507,5 +563,42 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 			selectMode();
 			break;
 		}
+	}
+	
+	@Override
+	public boolean onKeyDown(final int keyCode, final KeyEvent event) {
+		// Handle the back button when dirty
+		if (this.dirty && (keyCode == KeyEvent.KEYCODE_BACK)) {
+			final DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					switch (which) {
+					case DialogInterface.BUTTON_POSITIVE:
+						applyOrSaveRules();
+						break;
+					case DialogInterface.BUTTON_NEGATIVE:
+						// Propagate the event back to perform the desired action
+						MainActivity.super.onKeyDown(keyCode, event);
+						break;
+					}
+				}
+			};
+			final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setTitle(R.string.unsaved_changes).setMessage(R.string.unsaved_changes_message)
+					.setPositiveButton(R.string.apply, dialogClickListener)
+					.setNegativeButton(R.string.discard, dialogClickListener).show();
+			// Say that we've consumed the event
+			return true;
+		}
+		return super.onKeyDown(keyCode, event);
+	}
+	
+	/**
+	 * Entry representing an application in the screen
+	 */
+	private static class ListEntry {
+		private CheckBox box_wifi;
+		private CheckBox box_3g;
+		private TextView text;
 	}
 }

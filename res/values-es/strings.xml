@@ -44,6 +44,18 @@
     <string name="toast_error_enabling">DroidWall: ¡Error activando firewall!</string>
     <string name="toast_disabled">DroidWall: ¡Firewall inactivo!</string>
     <string name="toast_error_disabling">DroidWall: ¡Error inactivando firewall!</string>
+    <string name="set_custom_script">Definir script personalizado</string>
+    <string name="custom_script_defined">Script personalizado definido</string>
+    <string name="custom_script_removed">Script personalizado borrado</string>
+    <string name="custom_script_error">Error grabando script personalizado</string>
+    <string name="custom_script_info"><b>Ingrese su script personalizado abajo.</b>
+        \n<i>(Dejar vacio para borrar)</i>
+        \nPara informaciones (en Inglés) sobre los scripts personalizados, toque <a href="http://code.google.com/p/droidwall/wiki/CustomScripts">aqui</a>.
+    </string>
+    <string name="unsaved_changes">Cambios no grabados</string>
+    <string name="unsaved_changes_message">Se realizaron cambios que no fueron grabados.\n¿Aplicar cambios o descartar?</string>
+    <string name="apply">Aplicar</string>
+    <string name="discard">Descartar</string>
 	<string name="help_dialog_text"><i>Autor: Rodrigo Zechin Rosauro</i>
 		\n<i><a href="http://droidwall.googlecode.com">http://droidwall.googlecode.com</a></i>
 		\n

@@ -44,6 +44,18 @@
     <string name="toast_error_enabling">DroidWall: Error enabling firewall!</string>
     <string name="toast_disabled">DroidWall: Firewall disabled!</string>
     <string name="toast_error_disabling">DroidWall: Error disabling firewall!</string>
+    <string name="set_custom_script">Set custom script</string>
+    <string name="custom_script_defined">Custom script defined</string>
+    <string name="custom_script_removed">Custom script removed</string>
+    <string name="custom_script_error">Error saving custom script</string>
+    <string name="custom_script_info"><b>Enter your custom script bellow.</b>
+		\n<i>(Leave it blank to remove)</i>
+		\nFor information about custom scripts, click <a href="http://code.google.com/p/droidwall/wiki/CustomScripts">here</a>.
+	</string>
+    <string name="unsaved_changes">Unsaved changes</string>
+    <string name="unsaved_changes_message">You have unsaved changes.\nDo you want to apply or discard them?</string>
+    <string name="apply">Apply</string>
+    <string name="discard">Discard</string>
 	<string name="help_dialog_text"><i>Author: Rodrigo Zechin Rosauro</i>
 		\n<i><a href="http://droidwall.googlecode.com">http://droidwall.googlecode.com</a></i>
 		\n
