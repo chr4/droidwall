@@ -44,6 +44,18 @@
     <string name="toast_error_enabling">DroidWall: Ошибка включения брандмауэра!</string>
     <string name="toast_disabled">DroidWall:  Брандмауэр отключен!</string>
     <string name="toast_error_disabling">DroidWall: Ошибка отключения брандмауэра!</string>
+    <string name="set_custom_script">Установить сценарий</string>
+    <string name="custom_script_defined">Пользовательский сценарий определён</string>
+    <string name="custom_script_removed">Пользовательский сценарий удалён</string>
+    <string name="custom_script_error">Ошибка при сохранении пользовательского сценария</string>
+    <string name="custom_script_info"><b>Введите ниже Ваш сценарий.</b>
+		\n<i>(Оставьте это поле пустым для удаления)</i>
+		\nДля получения информации о пользовательских сценариях, нажмите <a href="http://code.google.com/p/droidwall/wiki/CustomScripts">здесь</a>.
+	</string>
+    <string name="unsaved_changes">Несохраненные изменения</string>
+    <string name="unsaved_changes_message">У вас есть несохраненные изменения.\nВы хотите применить или сбросить их?</string>
+    <string name="apply">Применить</string>
+    <string name="discard">Сбросить</string>
         <string name="help_dialog_text"><i>Автор: Rodrigo Zechin Rosauro</i>
                 \n<i><a href="http://droidwall.googlecode.com">http://droidwall.googlecode.com</a></i>
                 \n<i>Перевод: Евгений Мартыненко</i>\n
@@ -59,7 +71,7 @@
                 \nЕсли хотите проверить все действующие правила iptables, выберите в меню <b>Показать правила</b>.
                 \n
                 \n<b>Виджет:</b>
-                \nДля быстрого включения или отключения фаервола добавьте на Ваш домашний экран виджет DroidWall.
+                \nДля быстрого включения или отключения брандмауэра добавьте на Ваш домашний экран виджет DroidWall.
                 \n
                 \n<b>Журналы брандмауэра:</b>
                 \nЕсли Вы хотите увидеть, какие приложения были заблокированы DroidWall, откройте меню и включите ведение журнала.
