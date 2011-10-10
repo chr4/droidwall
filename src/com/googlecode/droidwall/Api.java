@@ -670,9 +670,8 @@ public final class Api {
 					map.put(app.uid, app);
 				}
 			}
-			applications = new DroidApp[map.size()];
-			int index = 0;
-			for (DroidApp application : map.values()) applications[index++] = application;
+			/* convert the map into an array */
+			applications = map.values().toArray(new DroidApp[map.size()]);;
 			return applications;
 		} catch (Exception e) {
 			alert(ctx, "error: " + e);
