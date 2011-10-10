@@ -34,13 +34,28 @@
     <string name="passremoved">密码锁定已移除</string>
     <string name="passerror">改变密码锁定出错</string>
     <string name="working">工作中...</string>
-    <string name="reading_apps">读取安装的程序</string>
+    <string name="reading_apps">正在读取安装的程序</string>
     <string name="please_wait">请稍等</string>
     <string name="mode_header">模式: %s</string>
     <string name="mode_whitelist">白名单(允许选中)</string>
     <string name="mode_blacklist">黑名单(阻止选中)</string>
     <string name="toast_bin_installed">DroidWall: 二进制文件已安装!</string>
+    <string name="toast_enabled">DroidWall: 防火墙已启用!</string>
     <string name="toast_error_enabling">DroidWall: 启用防火墙时出错!</string>
+    <string name="toast_disabled">DroidWall: 防火墙已禁用!</string>
+    <string name="toast_error_disabling">DroidWall: 禁用用防火墙时出错!</string>
+    <string name="set_custom_script">设置自定义脚本</string>
+    <string name="custom_script_defined">自定义脚本已定义</string>
+    <string name="custom_script_removed">自定义脚本已删除</string>
+    <string name="custom_script_error">保存自定义脚本时出错</string>
+    <string name="custom_script_info"><b>在这里输入你的自定义脚本.</b>
+		\n<i>(放空则删除)</i>
+		\n查看自定义脚本的更多信息, 点击 <a href="http://code.google.com/p/droidwall/wiki/CustomScripts"></a>.
+	</string>
+    <string name="unsaved_changes">未保存更改</string>
+    <string name="unsaved_changes_message">有未保存更改.\n你想保存还是丢弃它们?</string>
+    <string name="apply">应用</string>
+    <string name="discard">丢弃</string>
     <string name="help_dialog_text"><i>作者: Rodrigo Zechin Rosauro</i>
 		\n<i><a href="http://droidwall.googlecode.com">http://droidwall.googlecode.com</a></i>
 		\n
@@ -55,12 +70,12 @@
 		\n规则将被保存并在你重启手机后自动恢复.
 		\n如果你想检查当前iptables规则, 在菜单中选择<b>显示规则</b>.
 		\n
-		\n<b>桌面小插件:</b>
-		\n为了快速启用或禁用防火墙, 添加DroidWall桌面小插件到主屏幕.
+		\n<b>桌面部件:</b>
+		\n为了快速启用或禁用防火墙, 添加DroidWall桌面部件到主屏幕.
 		\n
 		\n<b>防火墙日志:</b>
 		\n如果你想看到哪些程序被DroidWall阻止, 打开菜单并启用日志.
-		\nDroidWall将会记录每一个被阻止的程序. 你可以打开菜单并选择 <b>更多 -&gt; 显示日志</b> 来检查日志.
+		\nDroidWall将会记录每一个被阻止的程序. 你可以打开菜单并选择 <b>更多 -> 显示日志</b> 来检查日志.
 		\n
 		\n<b>程序锁:</b>
 		\n你可以使用菜单中的<b>设置密码</b>选项来为DroidWall设置密码锁.
