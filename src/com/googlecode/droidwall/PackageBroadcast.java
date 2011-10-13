@@ -36,9 +36,15 @@ public class PackageBroadcast extends BroadcastReceiver {
 			// Ignore application updates
 			final boolean replacing = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false);
 			if (!replacing) {
+				// Update the Firewall if necessary
 				final int uid = intent.getIntExtra(Intent.EXTRA_UID, -123);
 				Api.applicationRemoved(context, uid);
+				// Force app list reload next time
+				Api.applications = null;
 			}
+		} else if (Intent.ACTION_PACKAGE_REMOVED.equals(intent.getAction())) {
+			// Force app list reload next time
+			Api.applications = null;
 		}
 	}
 

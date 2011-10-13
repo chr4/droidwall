@@ -52,6 +52,9 @@
 		\n<i>(Deixe em branco para remover)</i>
 		\nPara informações (em inglês) sobre scripts personalizados, clique <a href="http://code.google.com/p/droidwall/wiki/CustomScripts">aqui</a>.
 	</string>
+    <string name="custom_script2_info">
+    	\n<b>Script personalizado ao desligar</b>
+    	\nVocê pode definir também um script personalizado para ser executado quando o firewall é <b>desligado</b>:</string>
     <string name="unsaved_changes">Alterações não salvas</string>
     <string name="unsaved_changes_message">Você tem alterações não salvas.\nDeseja aplicar ou descartar essas alterações?</string>
     <string name="apply">Aplicar</string>

@@ -53,7 +53,7 @@ import android.widget.Toast;
  */
 public final class Api {
 	/** application version string */
-	public static final String VERSION = "1.5.3";
+	public static final String VERSION = "1.5.4-dev";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
 	/** special application UID used to indicate the Linux Kernel */
@@ -67,6 +67,7 @@ public final class Api {
 	public static final String PREF_WIFI_UIDS		= "AllowedUidsWifi";
 	public static final String PREF_PASSWORD 		= "Password";
 	public static final String PREF_CUSTOMSCRIPT 	= "CustomScript";
+	public static final String PREF_CUSTOMSCRIPT2 	= "CustomScript2"; // Executed on shutdown
 	public static final String PREF_MODE 			= "BlockMode";
 	public static final String PREF_ENABLED			= "Enabled";
 	public static final String PREF_LOGENABLED		= "LogEnabled";
@@ -76,7 +77,11 @@ public final class Api {
 	// Messages
 	public static final String STATUS_CHANGED_MSG 	= "com.googlecode.droidwall.intent.action.STATUS_CHANGED";
 	public static final String TOGGLE_REQUEST_MSG	= "com.googlecode.droidwall.intent.action.TOGGLE_REQUEST";
+	public static final String CUSTOM_SCRIPT_MSG	= "com.googlecode.droidwall.intent.action.CUSTOM_SCRIPT";
+	// Message extras (parameters)
 	public static final String STATUS_EXTRA			= "com.googlecode.droidwall.intent.extra.STATUS";
+	public static final String SCRIPT_EXTRA			= "com.googlecode.droidwall.intent.extra.SCRIPT";
+	public static final String SCRIPT2_EXTRA		= "com.googlecode.droidwall.intent.extra.SCRIPT2";
 	
 	// Cached applications
 	public static DroidApp applications[] = null;
@@ -409,21 +414,32 @@ public final class Api {
      * @return true if the rules were purged
      */
 	public static boolean purgeIptables(Context ctx, boolean showErrors) {
-    	StringBuilder res = new StringBuilder();
+    	final StringBuilder res = new StringBuilder();
 		try {
 			assertBinaries(ctx, showErrors);
-			int code = runScriptAsRoot(ctx, scriptHeader(ctx) +
+			// Custom "shutdown" script
+			final String customScript = ctx.getSharedPreferences(Api.PREFS_NAME, 0).getString(Api.PREF_CUSTOMSCRIPT2, "");
+	    	final StringBuilder script = new StringBuilder();
+	    	script.append(scriptHeader(ctx));
+	    	script.append("" +
 					"$IPTABLES -F droidwall\n" +
 					"$IPTABLES -F droidwall-reject\n" +
 					"$IPTABLES -F droidwall-3g\n" +
-					"$IPTABLES -F droidwall-wifi\n", res);
+					"$IPTABLES -F droidwall-wifi\n" +
+	    			"");
+	    	if (customScript.length() > 0) {
+				script.append("\n# BEGIN OF CUSTOM SCRIPT (user-defined)\n");
+				script.append(customScript);
+				script.append("\n# END OF CUSTOM SCRIPT (user-defined)\n\n");
+	    	}
+			int code = runScriptAsRoot(ctx, script.toString(), res);
 			if (code == -1) {
-				if (showErrors) alert(ctx, "error purging iptables. exit code: " + code + "\n" + res);
+				if (showErrors) alert(ctx, "Error purging iptables. exit code: " + code + "\n" + res);
 				return false;
 			}
 			return true;
 		} catch (Exception e) {
-			if (showErrors) alert(ctx, "error purging iptables: " + e);
+			if (showErrors) alert(ctx, "Error purging iptables: " + e);
 			return false;
 		}
     }

@@ -30,6 +30,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.Resources;
@@ -85,13 +86,6 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		setContentView(R.layout.main);
 		this.findViewById(R.id.label_mode).setOnClickListener(this);
 		Api.assertBinaries(this, true);
-    }
-    @Override
-    protected void onStart() {
-    	super.onStart();
-    	// Force re-loading the application list
-		Log.d("DroidWall", "onStart() - Forcing APP list reload!");
-    	Api.applications = null;
     }
     @Override
     protected void onResume() {
@@ -403,30 +397,35 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	 * Set a new init script
 	 */
 	private void setCustomScript(){
-		String script = getSharedPreferences(Api.PREFS_NAME, 0).getString(Api.PREF_CUSTOMSCRIPT, "");
-		new CustomScriptDialog(this, script, new android.os.Handler.Callback() {
-			@Override
-			public boolean handleMessage(Message msg) {
-				if (msg.obj != null ){
-					setCustomScript((String)msg.obj);
-				}
-				return false;
-			}
-		}).show();
+		Intent intent = new Intent();
+		intent.setClass(this, CustomScriptActivity.class);
+		startActivityForResult(intent, 0);
+	}
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		if (resultCode == RESULT_OK && Api.CUSTOM_SCRIPT_MSG.equals(data.getAction())) {
+			final String script = data.getStringExtra(Api.SCRIPT_EXTRA);
+			final String script2 = data.getStringExtra(Api.SCRIPT2_EXTRA);
+			setCustomScript(script, script2);
+		}
 	}
 	
     /**
      * Set a new init script
-     * @param script new script (empty to remove a script)
+     * @param script new script (empty to remove)
+     * @param script2 new "shutdown" script  (empty to remove)
      */
-	private void setCustomScript(String script) {
+	private void setCustomScript(String script, String script2) {
 		final Editor editor = getSharedPreferences(Api.PREFS_NAME, 0).edit();
 		// Remove unnecessary white-spaces, also replace '\r\n' if necessary
 		script = script.trim().replace("\r\n", "\n");
+		script2 = script2.trim().replace("\r\n", "\n");
 		editor.putString(Api.PREF_CUSTOMSCRIPT, script);
+		editor.putString(Api.PREF_CUSTOMSCRIPT2, script2);
 		int msgid;
 		if (editor.commit()) {
-			if (script.length() > 0) {
+			if (script.length() > 0 || script2.length() > 0) {
 				msgid = R.string.custom_script_defined;
 			} else {
 				msgid = R.string.custom_script_removed;

@@ -9,11 +9,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".CustomScriptActivity"/>
 	    <receiver android:name="BootBroadcast" android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
 	    	<intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"></action></intent-filter>
 		</receiver>
 		<receiver android:name ="PackageBroadcast">
 			<intent-filter>
+				<action android:name="android.intent.action.PACKAGE_ADDED"/>            
 				<action android:name="android.intent.action.PACKAGE_REMOVED"/>            
 				<data android:scheme="package" />
 			</intent-filter>

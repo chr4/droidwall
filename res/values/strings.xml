@@ -52,6 +52,9 @@
 		\n<i>(Leave it blank to remove)</i>
 		\nFor information about custom scripts, click <a href="http://code.google.com/p/droidwall/wiki/CustomScripts">here</a>.
 	</string>
+    <string name="custom_script2_info">
+    	\n<b>Custom shutdown script</b>
+    	\nYou can also define a custom script to be executed when the firewall is <b>disabled</b>:</string>
     <string name="unsaved_changes">Unsaved changes</string>
     <string name="unsaved_changes_message">You have unsaved changes.\nDo you want to apply or discard them?</string>
     <string name="apply">Apply</string>
