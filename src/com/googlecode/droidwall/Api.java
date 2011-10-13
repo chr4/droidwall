@@ -176,7 +176,7 @@ public final class Api {
 		}
 		assertBinaries(ctx, showErrors);
 		final String ITFS_WIFI[] = {"tiwlan+", "wlan+", "eth+", "ra+"};
-		final String ITFS_3G[] = {"rmnet+","pdp+","ppp+","uwbr+","wimax+","vsnet+"};
+		final String ITFS_3G[] = {"rmnet+","pdp+","ppp+","uwbr+","wimax+","vsnet+","ccmni+"};
 		final SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
 		final boolean whitelist = prefs.getString(PREF_MODE, MODE_WHITELIST).equals(MODE_WHITELIST);
 		final boolean blacklist = !whitelist;
