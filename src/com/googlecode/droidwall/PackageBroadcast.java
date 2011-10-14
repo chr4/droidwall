@@ -42,7 +42,7 @@ public class PackageBroadcast extends BroadcastReceiver {
 				// Force app list reload next time
 				Api.applications = null;
 			}
-		} else if (Intent.ACTION_PACKAGE_REMOVED.equals(intent.getAction())) {
+		} else if (Intent.ACTION_PACKAGE_ADDED.equals(intent.getAction())) {
 			// Force app list reload next time
 			Api.applications = null;
 		}
