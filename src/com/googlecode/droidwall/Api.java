@@ -54,7 +54,7 @@ import android.widget.Toast;
  */
 public final class Api {
 	/** application version string */
-	public static final String VERSION = "1.5.4";
+	public static final String VERSION = "1.5.5-dev";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
 	/** special application UID used to indicate the Linux Kernel */
