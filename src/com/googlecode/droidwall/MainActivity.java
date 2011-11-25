@@ -250,10 +250,10 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
         Arrays.sort(apps, new Comparator<DroidApp>() {
 			@Override
 			public int compare(DroidApp o1, DroidApp o2) {
+				if (o1.firstseem != o2.firstseem) {
+					return (o1.firstseem ? -1 : 1);
+				}
 				if ((o1.selected_wifi|o1.selected_3g) == (o2.selected_wifi|o2.selected_3g)) {
-					if (o1.firstseem != o2.firstseem) {
-						return (o1.firstseem ? -1 : 1);
-					}
 					return String.CASE_INSENSITIVE_ORDER.compare(o1.names[0], o2.names[0]);
 				}
 				if (o1.selected_wifi || o1.selected_3g) return -1;
