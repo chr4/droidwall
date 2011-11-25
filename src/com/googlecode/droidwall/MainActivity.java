@@ -49,6 +49,7 @@ import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -250,6 +251,9 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 			@Override
 			public int compare(DroidApp o1, DroidApp o2) {
 				if ((o1.selected_wifi|o1.selected_3g) == (o2.selected_wifi|o2.selected_3g)) {
+					if (o1.firstseem != o2.firstseem) {
+						return (o1.firstseem ? -1 : 1);
+					}
 					return String.CASE_INSENSITIVE_ORDER.compare(o1.names[0], o2.names[0]);
 				}
 				if (o1.selected_wifi || o1.selected_3g) return -1;
@@ -268,6 +272,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
        				entry.box_wifi = (CheckBox) convertView.findViewById(R.id.itemcheck_wifi);
        				entry.box_3g = (CheckBox) convertView.findViewById(R.id.itemcheck_3g);
        				entry.text = (TextView) convertView.findViewById(R.id.itemtext);
+       				entry.icon = (ImageView) convertView.findViewById(R.id.itemicon);
        				entry.box_wifi.setOnCheckedChangeListener(MainActivity.this);
        				entry.box_3g.setOnCheckedChangeListener(MainActivity.this);
        				convertView.setTag(entry);
@@ -277,6 +282,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
         		}
         		final DroidApp app = apps[position];
         		entry.text.setText(app.toString());
+        		entry.icon.setImageDrawable(app.icon);
         		final CheckBox box_wifi = entry.box_wifi;
         		box_wifi.setTag(app);
         		box_wifi.setChecked(app.selected_wifi);
@@ -599,5 +605,6 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		private CheckBox box_wifi;
 		private CheckBox box_3g;
 		private TextView text;
+		private ImageView icon;
 	}
 }

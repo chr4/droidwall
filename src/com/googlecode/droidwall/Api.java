@@ -44,6 +44,7 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -627,6 +628,7 @@ public final class Api {
 			String cachekey = null;
 			DroidApp app = null;
 			for (final ApplicationInfo apinfo : installed) {
+				boolean firstseem = false;
 				app = map.get(apinfo.uid);
 				// filter applications which are not allowed to access the Internet
 				if (app == null && PackageManager.PERMISSION_GRANTED != pkgmanager.checkPermission(Manifest.permission.INTERNET, apinfo.packageName)) {
@@ -640,11 +642,13 @@ public final class Api {
 					name = pkgmanager.getApplicationLabel(apinfo).toString();
 					edit.putString(cachekey, name);
 					changed = true;
+					firstseem = true;
 				}
 				if (app == null) {
 					app = new DroidApp();
 					app.uid = apinfo.uid;
 					app.names = new String[] { name };
+					app.icon = pkgmanager.getApplicationIcon(apinfo);
 					map.put(apinfo.uid, app);
 				} else {
 					final String newnames[] = new String[app.names.length + 1];
@@ -652,6 +656,7 @@ public final class Api {
 					newnames[app.names.length] = name;
 					app.names = newnames;
 				}
+				app.firstseem = firstseem;
 				// check if this application is selected
 				if (!app.selected_wifi && Arrays.binarySearch(selected_wifi, app.uid) >= 0) {
 					app.selected_wifi = true;
@@ -918,6 +923,10 @@ public final class Api {
     	boolean selected_3g;
     	/** toString cache */
     	String tostr;
+    	/** application icon */
+    	Drawable icon;
+    	/** first time seem? */
+    	boolean firstseem;
     	
     	public DroidApp() {
     	}
@@ -934,7 +943,7 @@ public final class Api {
     	public String toString() {
     		if (tostr == null) {
         		final StringBuilder s = new StringBuilder();
-        		if (uid > 0) s.append(uid + ": ");
+        		//if (uid > 0) s.append(uid + ": ");
         		for (int i=0; i<names.length; i++) {
         			if (i != 0) s.append(", ");
         			s.append(names[i]);
