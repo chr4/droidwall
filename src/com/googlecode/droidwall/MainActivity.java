@@ -45,6 +45,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -83,6 +84,12 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+		try {
+	        /* enable hardware acceleration on Android >= 3.0 */
+			final int FLAG_HARDWARE_ACCELERATED = WindowManager.LayoutParams.class.getDeclaredField("FLAG_HARDWARE_ACCELERATED").getInt(null);
+			getWindow().setFlags(FLAG_HARDWARE_ACCELERATED, FLAG_HARDWARE_ACCELERATED);
+		} catch (Exception e) {
+		}
         checkPreferences();
 		setContentView(R.layout.main);
 		this.findViewById(R.id.label_mode).setOnClickListener(this);
