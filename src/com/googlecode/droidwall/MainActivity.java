@@ -33,7 +33,9 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -78,6 +80,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 	
 	/** progress dialog instance */
 	private ListView listview = null;
+	/** indicates if the view has been modified and not yet saved */
 	private boolean dirty = false;
 	
     /** Called when the activity is first created. */
@@ -270,11 +273,12 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
         final LayoutInflater inflater = getLayoutInflater();
 		final ListAdapter adapter = new ArrayAdapter<DroidApp>(this,R.layout.listitem,R.id.itemtext,apps) {
         	@Override
-        	public View getView(int position, View convertView, ViewGroup parent) {
+        	public View getView(final int position, View convertView, ViewGroup parent) {
        			ListEntry entry;
         		if (convertView == null) {
         			// Inflate a new view
         			convertView = inflater.inflate(R.layout.listitem, parent, false);
+            		Log.d("DroidWall", ">> inflate("+convertView+")");
        				entry = new ListEntry();
        				entry.box_wifi = (CheckBox) convertView.findViewById(R.id.itemcheck_wifi);
        				entry.box_3g = (CheckBox) convertView.findViewById(R.id.itemcheck_3g);
@@ -288,8 +292,13 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
         			entry = (ListEntry) convertView.getTag();
         		}
         		final DroidApp app = apps[position];
+        		entry.app = app;
         		entry.text.setText(app.toString());
-        		entry.icon.setImageDrawable(app.icon);
+        		entry.icon.setImageDrawable(app.cached_icon);
+        		if (!app.icon_loaded && app.appinfo!=null) {
+        			// this icon has not been loaded yet - load it on a separated thread
+            		new LoadIconTask().execute(app, getPackageManager(), convertView);
+        		}
         		final CheckBox box_wifi = entry.box_wifi;
         		box_wifi.setTag(app);
         		box_wifi.setChecked(app.selected_wifi);
@@ -604,7 +613,40 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		}
 		return super.onKeyDown(keyCode, event);
 	}
-	
+	/**
+	 * Asynchronous task used to load icons in a background thread.
+	 */
+	private static class LoadIconTask extends AsyncTask<Object, Void, View> {
+		@Override
+		protected View doInBackground(Object... params) {
+			try {
+				final DroidApp app = (DroidApp) params[0];
+				final PackageManager pkgMgr = (PackageManager) params[1];
+				final View viewToUpdate = (View) params[2];
+				if (!app.icon_loaded) {
+					app.cached_icon = pkgMgr.getApplicationIcon(app.appinfo);
+					app.icon_loaded = true;
+				}
+				// Return the view to update at "onPostExecute"
+				// Note that we cannot be sure that this view still references "app"
+				return viewToUpdate;
+			} catch (Exception e) {
+				Log.e("DroidWall", "Error loading icon", e);
+				return null;
+			}
+		}
+		protected void onPostExecute(View viewToUpdate) {
+			try {
+				// This is executed in the UI thread, so it is safe to use viewToUpdate.getTag()
+				// and modify the UI
+				final ListEntry entryToUpdate = (ListEntry) viewToUpdate.getTag();
+				entryToUpdate.icon.setImageDrawable(entryToUpdate.app.cached_icon);
+			} catch (Exception e) {
+				Log.e("DroidWall", "Error showing icon", e);
+			}
+		};
+	}
+
 	/**
 	 * Entry representing an application in the screen
 	 */
@@ -613,5 +655,6 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
 		private CheckBox box_3g;
 		private TextView text;
 		private ImageView icon;
+		private DroidApp app;
 	}
 }

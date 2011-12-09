@@ -54,7 +54,7 @@ import android.widget.Toast;
  */
 public final class Api {
 	/** application version string */
-	public static final String VERSION = "1.5.5";
+	public static final String VERSION = "1.5.6";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
 	/** special application UID used to indicate the Linux Kernel */
@@ -648,7 +648,7 @@ public final class Api {
 					app = new DroidApp();
 					app.uid = apinfo.uid;
 					app.names = new String[] { name };
-					app.icon = pkgmanager.getApplicationIcon(apinfo);
+					app.appinfo = apinfo;
 					map.put(apinfo.uid, app);
 				} else {
 					final String newnames[] = new String[app.names.length + 1];
@@ -923,8 +923,12 @@ public final class Api {
     	boolean selected_3g;
     	/** toString cache */
     	String tostr;
-    	/** application icon */
-    	Drawable icon;
+    	/** application info */
+    	ApplicationInfo appinfo;
+    	/** cached application icon */
+    	Drawable cached_icon;
+    	/** indicates if the icon has been loaded already */
+    	boolean icon_loaded;
     	/** first time seem? */
     	boolean firstseem;
     	
