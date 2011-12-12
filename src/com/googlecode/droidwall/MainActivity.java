@@ -233,18 +233,18 @@ public class MainActivity extends Activity implements OnCheckedChangeListener, O
     	if (Api.applications == null) {
     		// The applications are not cached.. so lets display the progress dialog
     		final ProgressDialog progress = ProgressDialog.show(this, res.getString(R.string.working), res.getString(R.string.reading_apps), true);
-        	final Handler handler = new Handler() {
-        		public void handleMessage(Message msg) {
+        	new AsyncTask<Void, Void, Void>() {
+				@Override
+				protected Void doInBackground(Void... params) {
+        			Api.getApps(MainActivity.this);
+					return null;
+				}
+				@Override
+				protected void onPostExecute(Void result) {
         			try {progress.dismiss();} catch(Exception ex){}
         			showApplications();
-        		}
-        	};
-        	new Thread() {
-        		public void run() {
-        			Api.getApps(MainActivity.this);
-        			handler.sendEmptyMessage(0);
-        		}
-        	}.start();
+				}
+        	}.execute();
     	} else {
     		// the applications are cached, just show the list
         	showApplications();

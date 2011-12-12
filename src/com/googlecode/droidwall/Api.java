@@ -54,7 +54,7 @@ import android.widget.Toast;
  */
 public final class Api {
 	/** application version string */
-	public static final String VERSION = "1.5.6";
+	public static final String VERSION = "1.5.7";
 	/** special application UID used to indicate "any application" */
 	public static final int SPECIAL_UID_ANY	= -10;
 	/** special application UID used to indicate the Linux Kernel */
@@ -705,7 +705,7 @@ public final class Api {
      * @param showErrors indicates if errors should be alerted
 	 * @return boolean true if we have root
 	 */
-	public static boolean hasRootAccess(Context ctx, boolean showErrors) {
+	public static boolean hasRootAccess(final Context ctx, boolean showErrors) {
 		if (hasroot) return true;
 		final StringBuilder res = new StringBuilder();
 		try {
