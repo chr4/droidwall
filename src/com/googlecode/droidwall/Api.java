@@ -138,10 +138,12 @@ public final class Api {
 			"		exit 1\n" +
 			"	fi\n" +
 			"fi\n" +
-			"# Try to find iptables\n" +
+			"# Try to find iptables\n" +i
+			"# Added if iptables binary already in system then use it, if not use implemented one" + 
+			"if ! command -v iptables &> /dev/null; then
 			"if " + myiptables + " --version >/dev/null 2>/dev/null ; then\n" +
 			"	IPTABLES="+myiptables+"\n" +
-			"fi\n" +
+			"fi\nfi\n" +
 			"";
 	}
 	/**
