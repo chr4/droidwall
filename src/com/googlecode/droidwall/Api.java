@@ -139,8 +139,8 @@ public final class Api {
 			"	fi\n" +
 			"fi\n" +
 			"# Try to find iptables\n" +
-			"# Added if iptables binary already in system then use it, if not use implemented one" + 
-			"if ! command -v iptables &> /dev/null; then" +
+			"# Added if iptables binary already in system then use it, if not use implemented one\n" + 
+			"if ! command -v iptables &> /dev/null; then\n" +
 			"if " + myiptables + " --version >/dev/null 2>/dev/null ; then\n" +
 			"	IPTABLES="+myiptables+"\n" +
 			"fi\nfi\n" +
